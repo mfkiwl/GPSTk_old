@@ -515,7 +515,7 @@ namespace gpstk
                                              const vector<double>& Pseudorange,
                                              const XvtStore<SatID>& Eph,
                                              Matrix<double>& SVP,
-                                             ostream *pDebugStream)
+                                             ostream *pDebugStream )
       throw()
    {
       int i,j,nsvs,N=Satellite.size();
