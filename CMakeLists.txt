@@ -34,11 +34,19 @@ option( DEBUG_VERBOSE "HELP: DEBUG_VERBOSE: Default = OFF, print all CMake varia
 option( BUILD_EXT "HELP: BUILD_EXT: SWITCH, Default = OFF, Build the ext library, in addition to the core library." OFF )
 option( TEST_SWITCH "HELP: TEST_SWITCH: SWITCH, Default = OFF, Turn on test mode." OFF )
 option( BUILD_PYTHON "HELP: BUILD_PYTHON: SWITCH, Default = OFF, Turn on processing of python extension package." OFF )
+#build my project 
+option( BUILD_MY "HELP: BUILD_MY: SWITCH, Default = OFF, Build the my project, in addition to the core library." OFF ) 
+# set BUILD_MY TRUE by def.
+ set( BUILD_MY TRUE )
+ message( WARNING "Setting BUILD_MY = TRUE" )
 
 if( BUILD_PYTHON AND !BUILD_EXT )
     message( WARNING "Combination of BUILD_PYTHON=ON and BUILD_EXT=OFF is not allowed. Python swig bindings depend on gpstk/ext." )
     message( WARNING "Setting BUILD_EXT = TRUE" )
-    set( BUILD_EXT TRUE )
+    
+	set( BUILD_EXT TRUE )
+else()
+	message( WARNING "Setting BUILD_EXT = FALSE" )
 endif()
 
 include( BuildSetup.cmake )
@@ -152,7 +160,9 @@ if( BUILD_EXT )
    endif()
 endif()
 	
-
+if( BUILD_MY )
+  add_subdirectory( myApp )
+endif()
 #----------------------------------------
 # Export the project import cmake files.
 #----------------------------------------
