@@ -2813,6 +2813,7 @@ namespace gpstk
             size_t len = aStr.length();
             rv.reserve(len);
 
+
             for (int i = 0; i < len; i++)
             {
                char c = aStr[i];
