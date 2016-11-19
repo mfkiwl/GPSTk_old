@@ -43,120 +43,6 @@ ex9::ex9(char* arg0)
 
 
 
-   // Method to print solution values
-void ex9::printSolution(ofstream& outfile,
-    const SolverLMS& solver,
-    const CommonTime& time,
-    const ComputeDOP& cDOP,
-    bool  useNEU,
-    int   numSats,
-    double dryTropo,
-    int   precision)
-{
-
-    // Prepare for printing
-    outfile << fixed << setprecision(precision);
-
-
-    // Print results
-    outfile << static_cast<YDSTime>(time).year << "  ";    // Year           - #1
-    outfile << static_cast<YDSTime>(time).doy << "  ";    // DayOfYear      - #2
-    outfile << static_cast<YDSTime>(time).sod << "  ";    // SecondsOfDay   - #3
-
-    if (useNEU){
-
-        outfile << solver.getSolution(TypeID::dLat) << "  ";       // dLat  - #4
-        outfile << solver.getSolution(TypeID::dLon) << "  ";       // dLon  - #5
-        outfile << solver.getSolution(TypeID::dH) << "  ";         // dH    - #6
-                                                                   // We add 0.1 meters to 'wetMap' because 'NeillTropModel' sets a
-                                                                   // nominal value of 0.1 m. Also to get the total we have to add the
-                                                                   // dry tropospheric delay value
-                                                                   // ztd - #7
-        outfile << solver.getSolution(TypeID::wetMap) + 0.1 + dryTropo << "  ";
-
-        outfile << solver.getVariance(TypeID::dLat) << "  ";   // Cov dLat  - #8
-        outfile << solver.getVariance(TypeID::dLon) << "  ";   // Cov dLon  - #9
-        outfile << solver.getVariance(TypeID::dH) << "  ";     // Cov dH    - #10
-        outfile << solver.getVariance(TypeID::wetMap) << "  "; // Cov ztd   - #11
-
-    }
-    else{
-
-        outfile << solver.getSolution(TypeID::dx) << "  ";         // dx    - #4
-        outfile << solver.getSolution(TypeID::dy) << "  ";         // dy    - #5
-        outfile << solver.getSolution(TypeID::dz) << "  ";         // dz    - #6
-                                                                   // We add 0.1 meters to 'wetMap' because 'NeillTropModel' sets a
-                                                                   // nominal value of 0.1 m. Also to get the total we have to add the
-                                                                   // dry tropospheric delay value
-                                                                   // ztd - #7
-        outfile << solver.getSolution(TypeID::wetMap) + 0.1 + dryTropo << "  ";
-
-        outfile << solver.getVariance(TypeID::dx) << "  ";     // Cov dx    - #8
-        outfile << solver.getVariance(TypeID::dy) << "  ";     // Cov dy    - #9
-        outfile << solver.getVariance(TypeID::dz) << "  ";     // Cov dz    - #10
-        outfile << solver.getVariance(TypeID::wetMap) << "  "; // Cov ztd   - #11
-
-    }
-
-    outfile << numSats << "  ";    // Number of satellites - #12
-
-                                        // Add end-of-line
-    outfile << endl;
-
-
-    return;
-
-
-}  // End of method 'ex9::printSolution()'
-
-
-
-   // Method to print model values
-void ex9::printModel(ofstream& modelfile,
-    const gnssRinex& gData,
-    int   precision)
-{
-
-    // Prepare for printing
-    modelfile << fixed << setprecision(precision);
-
-    // Get epoch out of GDS
-    CommonTime time(gData.header.epoch);
-
-    // Iterate through the GNSS Data Structure
-    for (satTypeValueMap::const_iterator it = gData.body.begin();
-        it != gData.body.end();
-        it++){
-
-        // Print epoch
-        modelfile << static_cast<YDSTime>(time).year << "  ";    // Year           #1
-        modelfile << static_cast<YDSTime>(time).doy << "  ";    // DayOfYear      #2
-        modelfile << static_cast<YDSTime>(time).sod << "  ";    // SecondsOfDay   #3
-
-                                                                // Print satellite information (Satellite system and ID number)
-        modelfile << (*it).first << " ";             // System         #4
-                                                     // ID number      #5
-
-                                                     // Print model values
-        for (typeValueMap::const_iterator itObs = (*it).second.begin();
-            itObs != (*it).second.end();
-            itObs++){
-            // Print type names and values
-            modelfile << (*itObs).first << " ";
-            modelfile << (*itObs).second << " ";
-
-        }  // End of 'for( typeValueMap::const_iterator itObs = ...'
-
-        modelfile << endl;
-
-    }  // End for (it = gData.body.begin(); ... )
-
-}  // End of method 'ex9::printModel()'
-
-
-
-
-
    // Method that will be executed AFTER initialization but BEFORE processing
 void ex9::spinUp()
 {
@@ -277,7 +163,7 @@ void ex9::process()
 
 
            // Declare a "SP3EphemerisStore" object to handle precise ephemeris
-        SP3EphemerisStore SP3EphList, rawSP3EphList;
+        SP3EphemerisStore SP3EphList;
 
         // Set flags to reject satellites with bad or absent positional
         // values or clocks
@@ -310,7 +196,7 @@ void ex9::process()
             // Try to load each ephemeris file
             try{
 
-                rawSP3EphList.loadFile(sp3File);
+				SP3EphList.loadFile(sp3File);
 
             }
             catch (FileMissingException& e){
@@ -329,7 +215,7 @@ void ex9::process()
 
             // Try to load each ephemeris file
             try{
-                rawSP3EphList.loadRinexClockFile(ClkFile);
+				SP3EphList.loadRinexClockFile(ClkFile);
             }
             catch (FileMissingException& e){
                 // If file doesn't exist, issue a warning
@@ -344,14 +230,6 @@ void ex9::process()
         
         double newSampling(confReader.getValueAsDouble("decimationInterval", station));
 
-        bool isInterpol(confReader.getValueAsBoolean("IsInterp", station));
-        if (isInterpol)            {
-            SP3Aux::interpSP3Eph(rawSP3EphList, newSampling, SP3EphList);
-            cout << "interpolated with sampling " <<newSampling<<" " << endl;
-        }
-        else{
-            SP3EphList = rawSP3EphList;
-        }
 
            // Load station nominal position
         double xn(confReader.fetchListValueAsDouble("nominalPosition", station));
@@ -506,8 +384,7 @@ void ex9::process()
 
         }
 
-
-        // Object to compute satellite antenna phase center effect
+		// Object to compute satellite antenna phase center effect
         ComputeSatPCenter svPcenter(nominalPos);
         if (useantex){
             // Feed 'ComputeSatPCenter' object with 'AntexReader' object
@@ -776,29 +653,31 @@ void ex9::process()
 
             }
 
+
             // Check what type of solver we are using
             if (cycles < 1){
 
                 // This is a 'forwards-only' filter. Let's print to output
                 // file the results of this epoch
-                printSolution(outfile,
-                    pppSolver,
-                    time,
-                    cDOP,
-                    isNEU,
-                    gRin.numSats(),
-                    drytropo,
-                    precision);
+     //           printSolution(outfile,
+     //               pppSolver,
+					//time0,
+     //               time,
+     //               cDOP,
+     //               isNEU,
+     //               gRin.numSats(),
+     //               drytropo,
+					//stats,
+     //               precision);
 
             }  // End of 'if ( cycles < 1 )'
 
-
-
-               // The given epoch hass been processed. Let's get the next one
+			   // The given epoch hass been processed. Let's get the next one
 
         }  // End of 'while(rin >> gRin)'
 
-
+		   //print statistic
+	       //printStats(outfile, stats);
            // Close current Rinex observation stream
         rin.close();
 
@@ -814,10 +693,8 @@ void ex9::process()
         SP3EphList.clear();
 
 
-
         //// *** Forwards processing part is over *** ////
-
-
+  
 
         // Now decide what to do: If solver was a 'forwards-only' version,
         // then we are done and should continue with next station.
@@ -859,10 +736,11 @@ void ex9::process()
 
         }  // End of 'try-catch' block
 
+           //statistics for coorinates and tropo delay
+        vector<PowerSum> stats = { PowerSum() ,PowerSum() ,PowerSum() ,PowerSum() };
+        CommonTime time0(gRin.header.epoch);
 
-
-           // Reprocess is over. Let's finish with the last processing
-
+           // Reprocess is over. Let's finish with the last processing		
            // Loop over all data epochs, again, and print results
         while (fbpppSolver.LastProcess(gRin)){
 
@@ -870,21 +748,25 @@ void ex9::process()
 
             printSolution(outfile,
                 fbpppSolver,
+				time0,
                 time,
                 cDOP,
                 isNEU,
                 gRin.numSats(),
                 drytropo,
-                precision);
+				stats,
+				precision
+			);
 
         }  // End of 'while( fbpppSolver.LastProcess(gRin) )'
-
-
-           // We are done. Close and go for next station
+		
+		//print statistic
+		printStats(outfile, stats);
+				
+        // We are done. Close and go for next station
 
            // Close output file for this station
         outfile.close();
-
 
         // We are done with this station. Let's show a message
         cout << "Processing finished for station: '" << station
