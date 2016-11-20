@@ -737,15 +737,20 @@ void ex9::process()
         }  // End of 'try-catch' block
 
            //statistics for coorinates and tropo delay
-        vector<PowerSum> stats = { PowerSum() ,PowerSum() ,PowerSum() ,PowerSum() };
-        CommonTime time0(gRin.header.epoch);
-
+        vector<PowerSum> stats(4); 
+        CommonTime time0;
+        bool b = true;
            // Reprocess is over. Let's finish with the last processing		
            // Loop over all data epochs, again, and print results
         while (fbpppSolver.LastProcess(gRin)){
 
             CommonTime time(gRin.header.epoch);
-
+            if (b)
+            {
+                time0 = time;
+     
+                b=false;
+            }
             printSolution(outfile,
                 fbpppSolver,
 				time0,

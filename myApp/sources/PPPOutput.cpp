@@ -16,15 +16,14 @@ void ex9::printSolution(ofstream& outfile,
 	// Prepare for printing
 	outfile << fixed << setprecision(precision);
 
-
 	// Print results
 	outfile << static_cast<YDSTime>(time).year << "-";   // Year           - #1
 	outfile << static_cast<YDSTime>(time).doy << "-";    // DayOfYear      - #2
 	outfile << static_cast<YDSTime>(time).sod << "  ";   // SecondsOfDay   - #3
-    outfile << setprecision(6)<< (static_cast<YDSTime>(time).doy + static_cast<YDSTime>(time).sod / 86400.0)<<"  ";
+    outfile << setprecision(6)<< (static_cast<YDSTime>(time).doy + static_cast<YDSTime>(time).sod / 86400.0)<<"  "<< setprecision(precision);
 
 	//calculate statistic
-	double x, y, z, varX, varY, varZ;
+	double x(0), y(0), z(0), varX(0), varY(0), varZ(0);
 
 	// We add 0.1 meters to 'wetMap' because 'NeillTropModel' sets a
 	// nominal value of 0.1 m. Also to get the total we have to add the
@@ -57,14 +56,13 @@ void ex9::printSolution(ofstream& outfile,
 	outfile  << x << "  " << y << "  " << z << "  " << wetMap << "  ";
 	outfile << sqrt(varX*varX+ varY*varY+ varZ*varZ)<< "  ";
 
-	outfile << numSats << "  ";    // Number of satellites - #12
-
-								   // Add end-of-line
-	outfile << endl;
+	outfile << numSats << endl;    // Number of satellites - #12
 
     //time of convergence by default 7200 seconds;
-	double tConv(7200.0);
-	double dt = time - time0;
+	double tConv(5400.0);
+
+    double dt = time - time0;
+  
 	if (dt > tConv)
 	{
 		stats[0].add(x);
