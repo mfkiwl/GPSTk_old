@@ -17,6 +17,10 @@ protected:
     // Method that will take care of processing
     virtual void process();
 
+    bool pocessStataion(const string & station, const string & outName);
+
+    bool checkObsFile(const string & station);
+
     // Method that hold code to be run BEFORE processing
     virtual void spinUp();
 
@@ -31,6 +35,10 @@ private:
     // Configuration file reader
     ConfDataReader confReader;
 
+    //Input observation file stream
+    RinexObsStream rin;
+    // object to handle precise ephemeris and clocks
+    SP3EphemerisStore SP3EphList;
 
     // Declare our own methods to handle output
 
