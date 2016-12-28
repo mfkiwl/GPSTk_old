@@ -21,6 +21,8 @@ protected:
 
     bool checkObsFile(const string & station);
 
+    bool loadSatsData(const string & station);
+
     // Method that hold code to be run BEFORE processing
     virtual void spinUp();
 

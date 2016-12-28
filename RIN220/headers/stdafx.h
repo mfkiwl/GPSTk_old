@@ -1,7 +1,4 @@
-// stdafx.h : include file for standard system include files,
-// or project specific include files that are used frequently, but
-// are changed infrequently
-//
+
 #ifndef STDAFX_HPP
 #define STDAFX_HPP
 
@@ -122,9 +119,6 @@
 
 #include"ProcessingList.hpp"
 //
-#include"actions.h"
-#include"SP3Aux.h"
-#include"ex9.h"
 
 
 // TODO: reference additional headers your program requires here

@@ -162,6 +162,7 @@ endif()
 	
 if( BUILD_MY )
   add_subdirectory( myApp )
+  add_subdirectory( RIN220 )
 endif()
 #----------------------------------------
 # Export the project import cmake files.
