@@ -232,7 +232,8 @@ namespace gpstk
    
             /// This mask is for all required valid fields - RINEX 2
          allValid2              = 0x001207CB,
-
+         /// This mask is for all required valid fields - RINEX 2.20
+         allValid220            = 0x00120BCB,
             /// RINEX 3.0 for moving receivers -- make default
          allValid30             = 0x001205CB,
 

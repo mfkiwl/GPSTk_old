@@ -114,7 +114,7 @@ void ex9::printModel(ofstream& modelfile,
 		it++) {
 
 		// Print epoch
-		modelfile << static_cast<YDSTime>(time).year << "  ";    // Year           #1
+		modelfile << static_cast<YDSTime>(time).year << "  ";    // Year          #1
 		modelfile << static_cast<YDSTime>(time).doy << "  ";    // DayOfYear      #2
 		modelfile << static_cast<YDSTime>(time).sod << "  ";    // SecondsOfDay   #3
 

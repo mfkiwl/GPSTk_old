@@ -14,18 +14,28 @@ int main(int argc, char *argv[])
         string s = argv[i];
         cout << s << endl;
 
-        RinexObsStream rin220(s);
+        Rinex3ObsStream rin220(s);
 
-       // rin220 >> rin220.header;
-       // cout << rin220.header.version<<endl;
+        //rin220 >> rin220.header;
+        //cout << rin220.header.version<<endl;
         //rin.open(path, std::ios::in);
         gnssRinex gRin;
 
         while (rin220 >> gRin)
         {
+            //rin220.header.dump(cout);
             CommonTime time(gRin.header.epoch);
-            cout << time << endl;
-        }
+            cout << static_cast<YDSTime>(time);
+            cout << " "<< gRin.numSats() ;
+            auto vect = gRin.getVectorOfSatID();
+
+            for each (auto it in vect)
+            {
+                cout << it << " ";
+            }
+            cout << endl;
+           
+        }        rin220.header.dump(cout);
     }
     system("pause");
 }
