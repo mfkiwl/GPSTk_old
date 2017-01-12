@@ -1,0 +1,8 @@
+satDataFile      = PRN_GPS          , constellation data file
+precision        = 4                , number of decimal places in output file
+cutOffElevation, minimum allowed satellite elevation = 10.0, in degrees
+
+rinexObsFile  =                
+SP3List = 
+rinexClockFiles = 
+
