@@ -20,6 +20,8 @@ int main(int argc, char *argv[])
         //cout << rin220.header.version<<endl;
         //rin.open(path, std::ios::in);
         gnssRinex gRin;
+        Rinex3ObsHeader roh;
+            rin220 >> roh;
 
         while (rin220 >> gRin)
         {

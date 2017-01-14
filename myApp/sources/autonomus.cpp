@@ -17,9 +17,8 @@ Autonomus:: Autonomus(char* arg0, char * discr )
 
 }  // End of 'ex9::ex9
 
-void Autonomus::loadConfig(char* path)
+bool Autonomus::loadConfig(char* path)
 {
-
     // Check if the user provided a configuration file name
     if (confFile.getCount() > 0) {
 
@@ -49,7 +48,7 @@ void Autonomus::loadConfig(char* path)
 
         try {
             // Try to open default configuration file
-            confReader.open("pppconf.txt");
+            confReader.open(path);
         }
         catch (...) {
 
@@ -71,7 +70,7 @@ void Autonomus::loadConfig(char* path)
        // 'confReader' will look for it in the 'DEFAULT' section.
     confReader.setFallback2Default(true);
 
-
+    return true;
 }
 
 bool Autonomus::loadEphemeris()
@@ -81,8 +80,7 @@ bool Autonomus::loadEphemeris()
     // values or clocks
     SP3EphList.rejectBadPositions(true);
     SP3EphList.rejectBadClocks(true);
- 
-    
+     
     string sp3File;
     while ((sp3File = confReader.fetchListValue("SP3List")) != "") {
 
@@ -126,7 +124,7 @@ bool Autonomus::loadClocks()
 bool Autonomus::checkObsFile()
 {
     // Enable exceptions
-    rin.exceptions(ios::failbit);
+   // rin.exceptions(ios::failbit);
     // Try to open Rinex observations file
     try {
         string path = confReader("rinexObsFile");
@@ -177,6 +175,8 @@ bool Autonomus::checkObsFile()
      // Let's compute an useful constant (also found in "GNSSconstants.hpp")
      const double gamma = (L1_FREQ_GPS / L2_FREQ_GPS)*(L1_FREQ_GPS / L2_FREQ_GPS);
 
+     char * L1CodeID = "C1W";
+     char * L2CodeID = "C2W";
      try
      {
        // In order to throw exceptions, it is necessary to set the failbit
@@ -194,7 +194,8 @@ bool Autonomus::checkObsFile()
          int indexP1;
          try
          {
-             indexP1 = roh.getObsIndex("P1");
+             indexP1 = roh.getObsIndex(L1CodeID);
+             cout<< "L1 PRange from " << L1CodeID << " was used" << endl;
          }
          catch (...)
          {
@@ -205,13 +206,14 @@ bool Autonomus::checkObsFile()
          int indexP2;
          try
          {
-             indexP2 = roh.getObsIndex("P2");
+             indexP2 = roh.getObsIndex(L2CodeID);
+             cout << "iono-free with "<< L2CodeID<<" was used" << endl;
          }
          catch (...)
          {
              indexP2 = -1;
          }
-
+        // raimSolver.Debug = true;
 
          // Let's process all lines of observation data, one by one
          while (rin >> rod)
@@ -236,7 +238,6 @@ bool Autonomus::checkObsFile()
                  // Rinex3ObsData to get the map of observations
                  for (it = rod.obs.begin(); it != rod.obs.end(); it++)
                  {
-
                      // The RINEX file may have P1 observations, but the current
                      // satellite may not have them.
                      double P1(0.0);
@@ -296,7 +297,9 @@ bool Autonomus::checkObsFile()
                     // "raimSolver") is to set a RMSLimit of 6.5. We change that
                     // here. With this value of 3e6 the solution will have a lot
                     // more dispersion.
-                 raimSolver.RMSLimit = 3e6;
+                 raimSolver.RMSLimit = 3e8;
+
+                
 
                  // In order to compute positions we need the current time, the
                  // vector of visible satellites, the vector of corresponding
@@ -316,19 +319,23 @@ bool Autonomus::checkObsFile()
                  // instead of RMS distance from an a priori position.
 
                  // If we got a valid solution, let's print it
-
+                 cout << setprecision(12) << static_cast<YDSTime> (rod.time) << " ";
                  if (raimSolver.isValid())
                  {
                      // Vector "Solution" holds the coordinates, expressed in
                      // meters in an Earth Centered, Earth Fixed (ECEF) reference
                      // frame. The order is x, y, z  (as all ECEF objects)
+                    
                      cout << setprecision(12) << raimSolver.Solution[0] << " ";
                      cout << raimSolver.Solution[1] << " ";
                      cout << raimSolver.Solution[2];
+                     cout << raimSolver.Solution[3];
                      cout << endl;
 
                  }  // End of 'if( raimSolver.isValid() )'
-
+                 else                     {
+                     cout << "0 0 0" << endl;
+                 }
              } // End of 'if( rod.epochFlag == 0 || rod.epochFlag == 1 )'
 
          }  // End of 'while( roffs >> rod )'

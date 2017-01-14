@@ -41,8 +41,6 @@ ex9::ex9(char* arg0)
 
 }  // End of 'ex9::ex9'
 
-
-
    // Method that will be executed AFTER initialization but BEFORE processing
 void ex9::spinUp()
 {

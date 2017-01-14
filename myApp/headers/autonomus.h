@@ -7,9 +7,10 @@ class Autonomus :public BasicFramework
 {
 
 public :
-
     Autonomus(char* arg0, char * discr);
-    void loadConfig(char* path);
+
+  
+    bool loadConfig(char* path);
     bool loadEphemeris();
     bool loadClocks();
     bool checkObsFile();
