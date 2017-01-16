@@ -11,13 +11,14 @@ public:
     {};
 
     void Prepare(const CommonTime &t,
-                 const Vector<SatID> &IDs,
-                 const Vector<double> &PRs,
-                 const Vector<char> SNR,
-                 const XvtStore<SatID>& Eph,
-                 double Conv,
-                 Vector<bool> &UsedSat,
-                 Matrix<double> &SVT);
+        const Vector<SatID> &IDs,
+        const Vector<double> &PRs,
+        const Vector<char> SNR,
+        const XvtStore<SatID>& Eph,
+        double Conv,
+        Triple Pos,
+        Vector<bool> &UsedSat,
+        Matrix<double> &SVP);
 
     void ajustParameters();
 

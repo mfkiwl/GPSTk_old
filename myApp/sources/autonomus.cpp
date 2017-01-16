@@ -161,6 +161,7 @@ void Autonomus::process()
     // Declaration of objects for storing ephemerides and handling RAIM
 
     PRSolution2 raimSolver;
+    PRSolution2::isERCorr = false;
 
     // Object for void-type tropospheric model (in case no meteorological
     // RINEX is available)
@@ -180,7 +181,8 @@ void Autonomus::process()
     // Let's compute an useful constant (also found in "GNSSconstants.hpp")
     const double gamma = (L1_FREQ_GPS / L2_FREQ_GPS)*(L1_FREQ_GPS / L2_FREQ_GPS);
 
-    char * L1CodeID = "C1";
+    char * L1CCodeID = "C1";
+    char * L1PCodeID = "C1";
     char * L2CodeID = "C2W";
     char * L1CNo = "S1C";
     try{
@@ -196,6 +198,7 @@ void Autonomus::process()
         // The following lines fetch the corresponding indexes for some
         // observation types we are interested in. Given that old-style
         // observation types are used, GPS is assumed.
+        int indexC1= roh.getObsIndex(L1CCodeID);
         int indexCNoL1;
         try
         {
@@ -208,8 +211,8 @@ void Autonomus::process()
         }
         int indexP1;
         try{
-            indexP1 = roh.getObsIndex(L1CodeID);
-            cout << "L1 PRange from " << L1CodeID << " was used" << endl;
+            indexP1 = roh.getObsIndex(L1PCodeID);
+            cout << "L1 PRange from " << L1PCodeID << " was used" << endl;
         }
         catch (...){
             cerr << "The observation file doesn't have P1 pseudoranges." << endl;
@@ -241,6 +244,7 @@ void Autonomus::process()
             double Conv = DBL_MAX;
             vector<SatID> prnVec;
             vector<double> rangeVec;
+            vector<double> icorrVec;
             vector<uchar> CNoVec;
 
 #pragma region Select Observable
@@ -251,10 +255,11 @@ void Autonomus::process()
 
                 for (it = rod.obs.begin(); it != rod.obs.end(); it++)
                 {
-                    double P1(0.0);
+                    double P1(0.0), C1(0.0);
                     char S1(0);
                     try
                     {
+                        C1 = rod.getObs((*it).first, indexC1).data;
                         P1 = rod.getObs((*it).first, indexP1).data;
                         S1 = rod.getObs((*it).first, indexCNoL1).data;
                     }
@@ -277,24 +282,23 @@ void Autonomus::process()
                             continue;
                         }
 
-                        ionocorr = 1.0 / (1.0 - gamma) * (P1 - P2);
+                        ionocorr = 1.0 / (1.0 - gamma) * (C1 - P2);
 
                     }
 
                     prnVec.push_back((*it).first);
                     CNoVec.push_back(S1);
 
-                    rangeVec.push_back(P1 /*- ionocorr + rod.clockOffset*C_MPS*/);
+                    rangeVec.push_back(C1 - ionocorr /*- rod.clockOffset*C_MPS*/);
+                    icorrVec.push_back(ionocorr);
                 }
 #pragma endregion
 
                 //number of sats
                 int N = prnVec.size();
-
-                cout << setprecision(12) << static_cast<YDSTime> (rod.time) ;
-
+               // cout << setprecision(12) << static_cast<YDSTime> (rod.time) ;
                 raimSolver.PrepareAutonomousSolution(rod.time, prnVec, rangeVec, SP3EphList, SVP);
-                cout << " rejected SV ";
+               // cout << " rejected SV ";
                 int rejSV = 0;
                 for (int j = 0; j<prnVec.size(); j++)
                 {
@@ -320,31 +324,41 @@ void Autonomus::process()
                         UseSat.push_back(false);
                     }
                 }
-                cout << endl;
+                if (rejSV > 0)
+                    cout << endl;
 
                 raimSolver.AutonomousPRSolution(rod.time, UseSat, SVP, tropModelPtr, false, n_iterate, converge, Sol, Cov, Resid, Slope);
+                raimSolver.RMSLimit = 3e6;
 
-                os << setprecision(12) << static_cast<YDSTime> (rod.time) << " " << Sol[0] << " " << Sol[1] << " " << Sol[2] << " " << n_iterate << " "<< GoodIndexes .size()<<" "<< rejSV;
-                for (auto var : Resid){
-                    os << " " << var;
+  
+                //raimSolver.RAIMCompute(rod.time,
+                //    prnVec,
+                //    rangeVec,
+                //    SP3EphList,
+                //    tropModelPtr);
+
+                os << setprecision(12) << static_cast<YDSTime> (rod.time) << " "<< Sol[0] << " " << Sol[1] << " " << Sol[2] << " " << n_iterate << " " << GoodIndexes.size()<<" "<< rejSV;
+               // for (auto var : Resid){
+                    os << " " << Resid[0];
+               // }
+                os << " " << " iono ";
+                for (auto var : icorrVec) {
+                    os << " " << var ;
                 }
                 os << endl;
 
-                if (false/*raimSolver.isValid()*/){
-                    // Vector "Solution" holds the coordinates, expressed in
-                    // meters in an Earth Centered, Earth Fixed (ECEF) reference
-                    // frame. The order is x, y, z  (as all ECEF objects)
+                //if (raimSolver.isValid()){
 
-                    os << setprecision(12) << raimSolver.Solution[0] << " ";
-                    os << raimSolver.Solution[1] << " ";
-                    os << raimSolver.Solution[2];
-                    os << raimSolver.Solution[3];
-                    os << endl;
+                //    os << setprecision(12) << raimSolver.Solution[0] << " ";
+                //    os << raimSolver.Solution[1] << " ";
+                //    os << raimSolver.Solution[2];
+                //    os << raimSolver.Solution[3];
+                //    os << endl;
 
-                }  // End of 'if( raimSolver.isValid() )'
-                else{
-                    //   cout << "0 0 0" << endl;
-                }
+                //}  
+                //else{
+                //      os << "0 0 0" << endl;
+                //}
             } // End of 'if( rod.epochFlag == 0 || rod.epochFlag == 1 )'
 
         }  // End of 'while( roffs >> rod )'
