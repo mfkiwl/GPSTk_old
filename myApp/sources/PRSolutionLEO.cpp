@@ -1,4 +1,8 @@
+
+#include"stdafx.h"
 #include"PRSolutionLEO.h"
+
+ double PRSolutionLEO:: eps = 1e-5;
 
 void  PRSolutionLEO::selectObservable(
 	const Rinex3ObsData &rod,
@@ -66,11 +70,10 @@ void  PRSolutionLEO::selectObservable(
 
 void PRSolutionLEO::prepare(
 	const CommonTime &t,
-	const vector<SatID> &IDs,
+	vector<SatID> &IDs,
 	const vector<double> &PRs,
 	const XvtStore<SatID>& Eph,
 	const IonoModelStore &iono,
-	const double &elm,
 	const double &Conv,
 	Position PosRX,
 	vector<bool> &UsedSat,
@@ -81,13 +84,12 @@ void PRSolutionLEO::prepare(
 	{
 		// transmit time
 		Xvt PVT;
-		SatID &ID = IDs[i];
 		// first estimate of transmit time
 		tx -= PRs[i] / C_MPS;
 		// get ephemeris range, etc
 		try
 		{
-			PVT = Eph.getXvt(ID, tx);
+			PVT = Eph.getXvt(IDs[i], tx);
 		}
 		catch (InvalidRequest& e)
 		{
@@ -99,12 +101,12 @@ void PRSolutionLEO::prepare(
 
 		try
 		{
-			PVT = Eph.getXvt(ID, tx);
+			PVT = Eph.getXvt(IDs[i], tx);
 		}
 		catch (InvalidRequest& e)
 		{
 			///Negate SatID because getXvt failed.
-			ID.id = -::abs(ID.id);
+            IDs[i].id = -::abs(IDs[i].id);
 			UsedSat[i] = false;
 			continue;
 		}
@@ -120,7 +122,7 @@ void PRSolutionLEO::prepare(
 		{
 			Position SVpos(PVT);
 			double elv = PosRX.elevationGeodetic(SVpos);
-			if (elv < elm)
+			if (elv < maskEl)
 			{
 				UsedSat[i] = false;
 				continue;
@@ -133,76 +135,73 @@ void PRSolutionLEO::prepare(
 	}
 }
 
-	int  PRSolutionLEO::ajustParameters(
-		const Matrix<double> &SVP,
-		Vector<bool> &Use,
-		double &Conv,
-		int &nIter,
-		Vector<double>& Sol,
-		Matrix<double>& Cov,
-		Vector<double>& Resid	)
-	{
-		int iret, j, n, N;
-		size_t i;
-		// find the number of good satellites
-		for (N = 0, i = 0; i<Use.size(); i++)
-		{
-			if (Use[i]) N++;
-		}
+int  PRSolutionLEO::ajustParameters(
+    const Matrix<double> &SVP,
+    vector<bool> &Use,
+    double &Conv,
+    Matrix<double>& Cov,
+    Vector<double>& Resid)
+{
+    int iret, j, n, N;
+    size_t i;
+    // find the number of good satellites
+    for (N = 0, i = 0; i < Use.size(); i++)
+    {
+        if (Use[i]) N++;
+    }
 
-		// define for computation
+    // define for computation
 
-		Vector<double> CRange(N), dX(4);
-		Matrix<double> P(N, 4), PT, G(4, N), PG(N, N);
-		Xvt SV, RX;
+    Vector<double> CRange(N), dX(4);
+    Matrix<double> P(N, 4), PT, G(4, N), PG(N, N);
+    Xvt SV, RX;
 
-		Sol.resize(4);
-		Cov.resize(4, 4);
-		Resid.resize(N);
+    //Sol.resize(4);
+    //Cov.resize(4, 4);
+    Resid.resize(N);
 
-		for (i = 0; i<3; i++) RX.x[i] = Sol(i);
+    for (i = 0; i < 3; i++) RX.x[i] = Sol(i);
 
-		for (n = 0, i = 0; i<Use.size(); i++)
-		{
-			if (!Use[i]) continue;
+    for (n = 0, i = 0; i < Use.size(); i++)
+    {
+        if (!Use[i]) continue;
 
-			double rho = RSS(SVP(i, 0) - Sol(0), SVP(i, 1) - Sol(1), SVP(i, 2) - Sol(2));
-			
-			// corrected pseudorange (m)
-			CRange(n) = SVP(i, 3);
+        double rho = RSS(SVP(i, 0) - Sol(0), SVP(i, 1) - Sol(1), SVP(i, 2) - Sol(2));
 
-			// partials matrix
-			P(n, 0) = (Sol(0) - SVP(i, 0)) / rho; // x direction cosine
-			P(n, 1) = (Sol(1) - SVP(i, 1)) / rho; // y direction cosine
-			P(n, 2) = (Sol(2) - SVP(i, 2)) / rho; // z direction cosine
-			P(n, 3) = 1.0;
+        // corrected pseudorange (m)
+        CRange(n) = SVP(i, 3);
 
-			// data vector: corrected range residual
-			Resid(n) = CRange(n) - rho - Sol(3);
+        // partials matrix
+        P(n, 0) = (Sol(0) - SVP(i, 0)) / rho; // x direction cosine
+        P(n, 1) = (Sol(1) - SVP(i, 1)) / rho; // y direction cosine
+        P(n, 2) = (Sol(2) - SVP(i, 2)) / rho; // z direction cosine
+        P(n, 3) = 1.0;
 
-			PT = transpose(P);
+        // data vector: corrected range residual
+        Resid(n) = CRange(n) - rho - Sol(3);
 
-			Cov = PT * P;
-			try
-			{
-				Cov = inverseSVD(Cov);
-			}
-			//try { Cov = inverseLUD(Cov); }
-			catch (SingularMatrixException& sme)
-			{
-				return -2;
-			}
-			// generalized inverse
-			G = Cov * PT;
-			dX = G * Resid;
-			Sol += dX;
-			// test for convergence
-			Conv = norm(dX);
-			nIter++;
-			return 0;
-		}
+        PT = transpose(P);
+
+        Cov = PT * P;
+        try
+        {
+            Cov = inverseSVD(Cov);
+        }
+        //try { Cov = inverseLUD(Cov); }
+        catch (SingularMatrixException& sme)
+        {
+            return -2;
+        }
+        // generalized inverse
+        G = Cov * PT;
+        dX = G * Resid;
+        Sol += dX;
+        // test for convergence
+        Conv = norm(dX);
+        return 0;
+    }
 
 
 
-	};
+};
 

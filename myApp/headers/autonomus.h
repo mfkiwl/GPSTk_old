@@ -1,6 +1,7 @@
 #ifndef AUTONOMUS
 #define AUTONOMUS
 #include"stdafx.h"
+
 using namespace gpstk;
 
 class Autonomus :public BasicFramework
@@ -21,10 +22,10 @@ protected:
      
 private:
 
-	static char * L1CCodeID = "C1";
-	static char * L1PCodeID = "C1";
-	static char * L2CodeID = "C2W";
-	static char * L1CNo =    "S1C";
+	 char * L1CCodeID = "C1";
+	 char * L1PCodeID = "C1";
+	 char * L2CodeID = "C2W";
+	 char * L1CNo =    "S1C";
 
     // This field represents an option at command line interface (CLI)
     CommandOptionWithArg confFile;
@@ -40,8 +41,8 @@ private:
     // object to handle precise ephemeris and clocks
     SP3EphemerisStore SP3EphList;
 	//
-	PRSolutionLEO solverLEO;
-	Rinex3NavHeader rNavHeader;
+    PRSolutionLEO solverLEO;
+	IonoModelStore ionoStore;
 };
 
 #endif // !1

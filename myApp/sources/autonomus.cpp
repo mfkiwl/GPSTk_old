@@ -106,8 +106,8 @@ bool Autonomus::loadClocks()
 {
     //reading clock
     string ClkFile;
-    while ((ClkFile = confReader.fetchListValue("rinexClockFiles" )) != "") {
-
+    while ((ClkFile = confReader.fetchListValue("rinexClockFiles" )) != "") 
+    {
         // Try to load each ephemeris file
         try {
             SP3EphList.loadRinexClockFile(ClkFile);
@@ -155,50 +155,54 @@ bool Autonomus::checkObsFile()
 
 bool  Autonomus:: loadIono()
 {
-	Rinex3NavStream rNavFile;
 
 	// Activate failbit to enable exceptions
-	rNavFile.exceptions(ios::failbit);
+    string ionoFile;
+    while ((ionoFile = confReader.fetchListValue("rinexClockFiles")) != "")
+    {
+        try
+        {
+            Rinex3NavStream rNavFile;
+            rNavFile.exceptions(ios::failbit);
+            rNavFile.open(ionoFile.c_str(), std::ios::in);
+            Rinex3NavHeader rNavHeader;
+            rNavFile >> rNavHeader;
+            long week = rNavHeader.mapTimeCorr["GPUT"].refWeek;
+            GPSWeekSecond gpsws = GPSWeekSecond(week,0 );
+            CommonTime refTime = gpsws.convertToCommonTime();
+            IonoModel iMod;
+            if (rNavHeader.valid & Rinex3NavHeader::validIonoCorrGPS)
+            {
+                // Extract the Alpha and Beta parameters from the header
+                double* ionAlpha = rNavHeader.mapIonoCorr["GPSA"].param;
+                double* ionBeta = rNavHeader.mapIonoCorr["GPSB"].param;
 
-	// Read nav file and store unique list of ephemerides
-	try
-	{
-		rNavFile.open(navFile.getValue()[0].c_str(), std::ios::in);
-	}
-	catch (...)
-	{
-		cerr << "Problem opening file " << navFile.getValue()[0].c_str() << endl;
-		cerr << "Maybe it doesn't exist or you don't have proper read "
-			<< "permissions." << endl;
+                // Feed the ionospheric model with the parameters
+                iMod.setModel(ionAlpha, ionBeta);
+            }
+            else
+            {
+                cerr << "WARNING: Navigation file " << ionoFile
+                    << " doesn't have valid ionospheric correction parameters." << endl;
+            }
 
-		exit(-1);
-	}
+            // WARNING-WARNING-WARNING: In this case, the same model will be used
+            // for the full data span
+            ionoStore.addIonoModel(refTime, iMod);
 
-	// We will need to read ionospheric parameters (Klobuchar model) from
-	// the file header
-	rNavFile >> rNavHeader;
+        }
+        catch (...)
+        {
+            cerr << "Problem opening file " <<ionoFile << endl;
+            cerr << "Maybe it doesn't exist or you don't have proper read "
+                << "permissions." << endl;
 
-	// Let's feed the ionospheric model (Klobuchar type) from data in the
-	// navigation (ephemeris) file header. First, we must check if there are
-	// valid ionospheric correction parameters in the header
-	if (rNavHeader.valid & Rinex3NavHeader::validIonoCorrGPS)
-	{
-		// Extract the Alpha and Beta parameters from the header
-		double* ionAlpha = rNavHeader.mapIonoCorr["GPSA"].param;
-		double* ionBeta = rNavHeader.mapIonoCorr["GPSB"].param;
+            exit(-1);
+        }
+    }
 
-		// Feed the ionospheric model with the parameters
-		ioModel.setModel(ionAlpha, ionBeta);
-	}
-	else
-	{
-		cerr << "WARNING: Navigation file " << navFile.getValue()[0].c_str()
-			<< " doesn't have valid ionospheric correction parameters." << endl;
-	}
+	
 
-	// WARNING-WARNING-WARNING: In this case, the same model will be used
-	// for the full data span
-	ionoStore.addIonoModel(CommonTime::BEGINNING_OF_TIME, ioModel);
 }
 
 void Autonomus::process()
@@ -426,8 +430,6 @@ void Autonomus::process2()
 {
 	solverLEO.maskEl =  confReader.fetchListValueAsDouble("Elmask");
 	solverLEO.maskSNR = confReader.fetchListValueAsInt("SNRmask");
-	IonoModelStore iono;
-	IonoModel ioModel;
 
 	try
 	{
@@ -488,12 +490,14 @@ void Autonomus::process2()
 		// Let's process all lines of observation data, one by one
 		while (rin >> rod)
 		{
-			Matrix<double> SVP, Cov;
+            Position pos(0, 0, 0);
+			Matrix<double> SVP, Cov(4,4);
+            
 			int N = 0;
 		
 			vector<int> GoodIndexes;
 			// prepare for iteration loop
-			Vector<double>Resid, Slope, Sol = 0.0; // initial guess: center of earth
+            Vector<double> Resid; // initial guess: center of earth
 			int n_iterate = 10;
 			double converge = 1e-3;
 			double Conv = DBL_MAX;
@@ -501,7 +505,7 @@ void Autonomus::process2()
 			vector<double> rangeVec;
 			vector<uchar> SNRs;
 			vector<bool> UseSat;
-			
+
 			int j = 0;
 			solverLEO.selectObservable(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs);
 			do
@@ -513,13 +517,12 @@ void Autonomus::process2()
 					else
 						UseSat.push_back(false);
 				}
-				solverLEO.prepare(rod.time, prnVec,rangeVec,SP3EphList,
+                solverLEO.prepare(rod.time, prnVec, rangeVec, SP3EphList, ionoStore, Conv, pos, UseSat, SVP);
 
-			)
+                solverLEO.ajustParameters(SVP, UseSat, Conv, Cov, Resid);
 				j++;
 
-			}
-			while (j<n_iterate)
+            } while (j < n_iterate);
 
 
 		}  // End of 'while( roffs >> rod )'
