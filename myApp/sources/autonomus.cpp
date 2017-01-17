@@ -153,6 +153,54 @@ bool Autonomus::checkObsFile()
     }  // End of 'try-catch' block
 }
 
+bool  Autonomus:: loadIono()
+{
+	Rinex3NavStream rNavFile;
+
+	// Activate failbit to enable exceptions
+	rNavFile.exceptions(ios::failbit);
+
+	// Read nav file and store unique list of ephemerides
+	try
+	{
+		rNavFile.open(navFile.getValue()[0].c_str(), std::ios::in);
+	}
+	catch (...)
+	{
+		cerr << "Problem opening file " << navFile.getValue()[0].c_str() << endl;
+		cerr << "Maybe it doesn't exist or you don't have proper read "
+			<< "permissions." << endl;
+
+		exit(-1);
+	}
+
+	// We will need to read ionospheric parameters (Klobuchar model) from
+	// the file header
+	rNavFile >> rNavHeader;
+
+	// Let's feed the ionospheric model (Klobuchar type) from data in the
+	// navigation (ephemeris) file header. First, we must check if there are
+	// valid ionospheric correction parameters in the header
+	if (rNavHeader.valid & Rinex3NavHeader::validIonoCorrGPS)
+	{
+		// Extract the Alpha and Beta parameters from the header
+		double* ionAlpha = rNavHeader.mapIonoCorr["GPSA"].param;
+		double* ionBeta = rNavHeader.mapIonoCorr["GPSB"].param;
+
+		// Feed the ionospheric model with the parameters
+		ioModel.setModel(ionAlpha, ionBeta);
+	}
+	else
+	{
+		cerr << "WARNING: Navigation file " << navFile.getValue()[0].c_str()
+			<< " doesn't have valid ionospheric correction parameters." << endl;
+	}
+
+	// WARNING-WARNING-WARNING: In this case, the same model will be used
+	// for the full data span
+	ionoStore.addIonoModel(CommonTime::BEGINNING_OF_TIME, ioModel);
+}
+
 void Autonomus::process()
 {
 
@@ -181,11 +229,7 @@ void Autonomus::process()
     // Let's compute an useful constant (also found in "GNSSconstants.hpp")
     const double gamma = (L1_FREQ_GPS / L2_FREQ_GPS)*(L1_FREQ_GPS / L2_FREQ_GPS);
 
-    char * L1CCodeID = "C1";
-    char * L1PCodeID = "C1";
-    char * L2CodeID = "C2W";
-    char * L1CNo = "S1C";
-    try{
+	try{
         // In order to throw exceptions, it is necessary to set the failbit
         rin.exceptions(ios::failbit);
 
@@ -243,7 +287,8 @@ void Autonomus::process()
             double converge = 1e-3;
             double Conv = DBL_MAX;
             vector<SatID> prnVec;
-            vector<double> rangeVec;
+            vector<double> rangeP2Vec;
+			vector<double> rangeVec;
             vector<double> icorrVec;
             vector<uchar> CNoVec;
 
@@ -281,7 +326,8 @@ void Autonomus::process()
                         {
                             continue;
                         }
-
+						if(abs(P2-C1)>1e2) continue;
+						rangeP2Vec.push_back(P2);
                         ionocorr = 1.0 / (1.0 - gamma) * (C1 - P2);
 
                     }
@@ -289,7 +335,7 @@ void Autonomus::process()
                     prnVec.push_back((*it).first);
                     CNoVec.push_back(S1);
 
-                    rangeVec.push_back(C1 - ionocorr /*- rod.clockOffset*C_MPS*/);
+                    rangeVec.push_back(P1 /*- ionocorr /*- rod.clockOffset*C_MPS*/);
                     icorrVec.push_back(ionocorr);
                 }
 #pragma endregion
@@ -305,7 +351,7 @@ void Autonomus::process()
                     if (prnVec[j].id > 0)
                     {
                         
-                        if (CNoVec[j] > 0)
+                        if (CNoVec[j] > 26)
                         {
                             N++;
                             UseSat.push_back(true);
@@ -331,20 +377,20 @@ void Autonomus::process()
                 raimSolver.RMSLimit = 3e6;
 
   
-                //raimSolver.RAIMCompute(rod.time,
-                //    prnVec,
-                //    rangeVec,
-                //    SP3EphList,
-                //    tropModelPtr);
+                raimSolver.RAIMCompute(rod.time,
+                    prnVec,
+                    rangeVec,
+                    SP3EphList,
+                    tropModelPtr);
 
                 os << setprecision(12) << static_cast<YDSTime> (rod.time) << " "<< Sol[0] << " " << Sol[1] << " " << Sol[2] << " " << n_iterate << " " << GoodIndexes.size()<<" "<< rejSV;
-               // for (auto var : Resid){
-                    os << " " << Resid[0];
-               // }
-                os << " " << " iono ";
-                for (auto var : icorrVec) {
-                    os << " " << var ;
+				
+				double ssq(0.0);
+				for (auto var : Resid){
+					ssq+= var*var;
                 }
+					os << sqrt(ssq / (Resid.size() - 1));
+
                 os << endl;
 
                 //if (raimSolver.isValid()){
@@ -374,5 +420,122 @@ void Autonomus::process()
     os.close();
     exit(0);
 
-}  // End of 'main()'
+} 
 
+void Autonomus::process2()
+{
+	solverLEO.maskEl =  confReader.fetchListValueAsDouble("Elmask");
+	solverLEO.maskSNR = confReader.fetchListValueAsInt("SNRmask");
+	IonoModelStore iono;
+	IonoModel ioModel;
+
+	try
+	{
+
+	}
+	catch (...)
+	{
+		cerr << "cant read IonoModel" << endl;
+	}
+	ofstream os;
+	os.open("output.txt");
+
+	try {
+		// In order to throw exceptions, it is necessary to set the failbit
+		rin.exceptions(ios::failbit);
+
+		Rinex3ObsHeader roh;
+		Rinex3ObsData rod;
+
+		// Let's read the header
+		rin >> roh;
+
+		// The following lines fetch the corresponding indexes for some
+		// observation types we are interested in. Given that old-style
+		// observation types are used, GPS is assumed.
+		int indexC1 = roh.getObsIndex(L1CCodeID);
+		int indexCNoL1;
+		try
+		{
+			indexCNoL1 = roh.getObsIndex(L1CNo);
+		}
+		catch (...)
+		{
+			cerr << "The observation file doesn't have L1 C/No" << endl;
+			exit(1);
+		}
+		int indexP1;
+		try {
+			indexP1 = roh.getObsIndex(L1PCodeID);
+			cout << "L1 PRange from " << L1PCodeID << " was used" << endl;
+		}
+		catch (...) {
+			cerr << "The observation file doesn't have P1 pseudoranges." << endl;
+			exit(1);
+		}
+
+		int indexP2;
+		try {
+			indexP2 = roh.getObsIndex(L2CodeID);
+			cout << "iono-free with " << L2CodeID << " was used" << endl;
+		}
+		catch (...)
+		{
+			indexP2 = -1;
+		}
+		// raimSolver.Debug = true;
+
+		// Let's process all lines of observation data, one by one
+		while (rin >> rod)
+		{
+			Matrix<double> SVP, Cov;
+			int N = 0;
+		
+			vector<int> GoodIndexes;
+			// prepare for iteration loop
+			Vector<double>Resid, Slope, Sol = 0.0; // initial guess: center of earth
+			int n_iterate = 10;
+			double converge = 1e-3;
+			double Conv = DBL_MAX;
+			vector<SatID> prnVec;
+			vector<double> rangeVec;
+			vector<uchar> SNRs;
+			vector<bool> UseSat;
+			
+			int j = 0;
+			solverLEO.selectObservable(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs);
+			do
+			{
+				for (size_t i = 0; i < prnVec.size(); i++)
+				{
+					if (SNRs[i] >= solverLEO.maskSNR)
+						UseSat.push_back(true);
+					else
+						UseSat.push_back(false);
+				}
+				solverLEO.prepare(rod.time, prnVec,rangeVec,SP3EphList,
+
+			)
+				j++;
+
+			}
+			while (j<n_iterate)
+
+
+		}  // End of 'while( roffs >> rod )'
+
+	}
+	catch (Exception& e) {
+		cerr << e << endl;
+	}
+	catch (...) {
+		cerr << "Caught an unexpected exception." << endl;
+	}
+
+	os.close();
+
+}
+
+#pragma region 
+// End of 'if( rod.epochFlag == 0 || rod.epochFlag == 1 )'
+#pragma endregion

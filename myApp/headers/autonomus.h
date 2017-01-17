@@ -9,16 +9,22 @@ class Autonomus :public BasicFramework
 public :
     Autonomus(char* arg0, char * discr);
 
-  
     bool loadConfig(char* path);
     bool loadEphemeris();
+	bool loadIono();
     bool loadClocks();
     bool checkObsFile();
+	void process2();
     virtual void process();
 
 protected:
      
 private:
+
+	static char * L1CCodeID = "C1";
+	static char * L1PCodeID = "C1";
+	static char * L2CodeID = "C2W";
+	static char * L1CNo =    "S1C";
 
     // This field represents an option at command line interface (CLI)
     CommandOptionWithArg confFile;
@@ -33,6 +39,9 @@ private:
     Rinex3ObsStream rin;
     // object to handle precise ephemeris and clocks
     SP3EphemerisStore SP3EphList;
+	//
+	PRSolutionLEO solverLEO;
+	Rinex3NavHeader rNavHeader;
 };
 
 #endif // !1
