@@ -2,7 +2,7 @@
 #include"stdafx.h"
 #include"PRSolutionLEO.h"
 
- double PRSolutionLEO:: eps = 1e-5;
+ double PRSolutionLEO:: eps = 1e-4;
 
 void  PRSolutionLEO::selectObservable(
 	const Rinex3ObsData &rod,
@@ -14,7 +14,6 @@ void  PRSolutionLEO::selectObservable(
 	vector<uchar> & SNRs
 )
 {
-
 	// Let's compute an useful constant (also found in "GNSSconstants.hpp")
 	const double gamma = (L1_FREQ_GPS / L2_FREQ_GPS)*(L1_FREQ_GPS / L2_FREQ_GPS);
 	// Apply editing criteria
@@ -56,17 +55,10 @@ void  PRSolutionLEO::selectObservable(
 
 			PRNs.push_back((*it).first);
 			SNRs.push_back(S1);
-			L1PRs.push_back(C1 /*- ionocorr /*- rod.clockOffset*C_MPS*/);
+			L1PRs.push_back(C1  /*- rod.clockOffset*C_MPS/*- ionocorr*/);
 		}
-
-
-
-
-
 	}
 }
-
-
 
 void PRSolutionLEO::prepare(
 	const CommonTime &t,
@@ -74,17 +66,19 @@ void PRSolutionLEO::prepare(
 	const vector<double> &PRs,
 	const XvtStore<SatID>& Eph,
 	const IonoModelStore &iono,
-	const double &Conv,
 	Position PosRX,
 	vector<bool> &UsedSat,
 	Matrix<double> &SVP)
 {
-	CommonTime tx = t;
+    CommonTime tx;
+
 	for (size_t i = 0; i < IDs.size(); i++)
 	{
+        if (!UsedSat[i]) continue;
 		// transmit time
 		Xvt PVT;
 		// first estimate of transmit time
+        tx = t;
 		tx -= PRs[i] / C_MPS;
 		// get ephemeris range, etc
 		try
@@ -118,32 +112,22 @@ void PRSolutionLEO::prepare(
 		SVP(i, 3) = PRs[i] + C_MPS * (PVT.clkbias + PVT.relcorr);
 
 
-		if (Conv < 100)
-		{
-			Position SVpos(PVT);
-			double elv = PosRX.elevationGeodetic(SVpos);
-			if (elv < maskEl)
-			{
-				UsedSat[i] = false;
-				continue;
-			}
-
-			double azm = PosRX.azimuth(SVpos);
-
-			SVP(i, 3) -= iono.getCorrection(t, PosRX, elv, azm);
-		}
 	}
 }
 
 int  PRSolutionLEO::ajustParameters(
+    const CommonTime &t,
     const Matrix<double> &SVP,
     vector<bool> &Use,
-    double &Conv,
     Matrix<double>& Cov,
-    Vector<double>& Resid)
+    Vector<double>& Resid,
+    IonoModelStore &iono,
+    bool isApplyIono
+)
 {
     int iret, j, n, N;
     size_t i;
+
     // find the number of good satellites
     for (N = 0, i = 0; i < Use.size(); i++)
     {
@@ -155,15 +139,32 @@ int  PRSolutionLEO::ajustParameters(
     Vector<double> CRange(N), dX(4);
     Matrix<double> P(N, 4), PT, G(4, N), PG(N, N);
     Xvt SV, RX;
-
+    
     //Sol.resize(4);
     //Cov.resize(4, 4);
     Resid.resize(N);
 
     for (i = 0; i < 3; i++) RX.x[i] = Sol(i);
-
+    Position PosRX(RX);
+    ps.clear();
+    
     for (n = 0, i = 0; i < Use.size(); i++)
     {
+        double iodel(0.0);
+        if (Conv < 100 && Use[i])
+        {
+
+            Position SVpos(SVP(i, 0), SVP(i, 1), SVP(i, 2));
+            double elv = PosRX.elevationGeodetic(SVpos);
+            if (elv < maskEl)
+            {
+                Use[i] = false;
+                continue;
+            }
+
+            double azm = PosRX.azimuth(SVpos);
+            double iodel = iono.getCorrection(t, PosRX, elv, azm);
+        }
         if (!Use[i]) continue;
 
         double rho = RSS(SVP(i, 0) - Sol(0), SVP(i, 1) - Sol(1), SVP(i, 2) - Sol(2));
@@ -178,7 +179,10 @@ int  PRSolutionLEO::ajustParameters(
         P(n, 3) = 1.0;
 
         // data vector: corrected range residual
-        Resid(n) = CRange(n) - rho - Sol(3);
+        Resid(n) = CRange(n) - rho - Sol(3)- iodel;
+        ps.add(Resid(n));
+        n++;
+    }
 
         PT = transpose(P);
 
@@ -198,10 +202,6 @@ int  PRSolutionLEO::ajustParameters(
         Sol += dX;
         // test for convergence
         Conv = norm(dX);
-        return 0;
-    }
-
-
 
 };
 

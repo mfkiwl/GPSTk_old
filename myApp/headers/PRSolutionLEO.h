@@ -8,7 +8,7 @@ class PRSolutionLEO: public PRSolution2
 {
 public:
     PRSolutionLEO() : PRSolution2(),
-        maskEl(0.0), maskSNR(0.0), Sol(4)
+        maskEl(0.0), maskSNR(0.0), Sol(4), Conv(DBL_MAX), ps()
     {};
 	void  selectObservable(
 		const Rinex3ObsData &rod,
@@ -26,27 +26,29 @@ public:
         const vector<double> &PRs,
         const XvtStore<SatID>& Eph,
         const IonoModelStore &iono,
-        const double &Conv,
         Position PosRX,
         vector<bool> &UsedSat,
         Matrix<double> &SVP
 	);
 
-	int ajustParameters(
+    int ajustParameters(
+        const CommonTime &t,
         const Matrix<double> &SVP,
         vector<bool> &Use,
-        double &Conv,
         Matrix<double>& Cov,
-        Vector<double>& Resid
+        Vector<double>& Resid,
+        IonoModelStore &iono,
+        bool isApplyIono
 	
 	);
 
 
     uchar maskSNR;
     double maskEl;
-    
+    double Conv;
+
     Vector< double> Sol;
-    
+    PowerSum ps;
     static double eps;
     
 };

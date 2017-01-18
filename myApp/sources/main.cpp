@@ -14,10 +14,7 @@ int main(int argc, char *argv[])
    cout<< "Config Loading "<< proc.loadConfig(argv[1])<<endl;
    cout << "Ephemeris Loading " << proc.loadEphemeris() << endl;
  //  cout << "Clocks Loading " << proc.loadClocks() << endl;
+   cout << "IonoModel Loading" << proc.loadIono() << endl;
    cout << "Check files with obs " << proc.checkObsFile() << endl;
-   proc.process();
-
-    //return Actions::StanaloneSPP(argc, argv);
-	//return Actions::CalcPPP(argv[0]);
-    //return Actions::runEx9(argc, argv);
+   proc.process2();
 }
