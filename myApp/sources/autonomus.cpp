@@ -198,248 +198,23 @@ bool  Autonomus:: loadIono()
     }
     return true;
 }
-//
 void Autonomus::process()
 {
+    solverLEO.maskEl = confReader.fetchListValueAsDouble("Elmask");
+    solverLEO.maskSNR = confReader.fetchListValueAsInt("SNRmask");
 
     ofstream os;
     os.open("output.txt");
-    // Declaration of objects for storing ephemerides and handling RAIM
 
-    PRSolution2 raimSolver;
-    PRSolution2::isERCorr = false;
+    try {
 
-    // Object for void-type tropospheric model (in case no meteorological
-    // RINEX is available)
-    ZeroTropModel noTropModel;
-
-    // Object for GG-type tropospheric model (Goad and Goodman, 1974)
-    // Default constructor => default values for model
-    GGTropModel ggTropModel;
-
-    // Pointer to one of the two available tropospheric models. It points
-    // to the void model by default
-    TropModel *tropModelPtr = &noTropModel;
-
-    // This verifies the ammount of command-line parameters given and
-
-
-    // Let's compute an useful constant (also found in "GNSSconstants.hpp")
-    const double gamma = (L1_FREQ_GPS / L2_FREQ_GPS)*(L1_FREQ_GPS / L2_FREQ_GPS);
-
-	try{
-        // In order to throw exceptions, it is necessary to set the failbit
         rin.exceptions(ios::failbit);
-
         Rinex3ObsHeader roh;
         Rinex3ObsData rod;
 
-        // Let's read the header
+        //read the header
         rin >> roh;
 
-        // The following lines fetch the corresponding indexes for some
-        // observation types we are interested in. Given that old-style
-        // observation types are used, GPS is assumed.
-        int indexC1= roh.getObsIndex(L1CCodeID);
-        int indexCNoL1;
-        try
-        {
-            indexCNoL1 = roh.getObsIndex(L1CNo);
-        }
-        catch (...)
-        {
-            cerr << "The observation file doesn't have L1 C/No" << endl;
-            exit(1);
-        }
-        int indexP1;
-        try{
-            indexP1 = roh.getObsIndex(L1PCodeID);
-            cout << "L1 PRange from " << L1PCodeID << " was used" << endl;
-        }
-        catch (...){
-            cerr << "The observation file doesn't have P1 pseudoranges." << endl;
-            exit(1);
-        }
-
-        int indexP2;
-        try{
-            indexP2 = roh.getObsIndex(L2CodeID);
-            cout << "iono-free with " << L2CodeID << " was used" << endl;
-        }
-        catch (...)
-        {
-            indexP2 = -1;
-        }
-        // raimSolver.Debug = true;
-
-         // Let's process all lines of observation data, one by one
-        while (rin >> rod)
-        {
-            Matrix<double> SVP, Cov;
-            int N = 0;
-            vector<bool> UseSat;
-            vector<int> GoodIndexes;
-            // prepare for iteration loop
-            Vector<double>Resid, Slope, Sol = 0.0; // initial guess: center of earth
-            int n_iterate = 10;
-            double converge = 1e-3;
-            double Conv = DBL_MAX;
-            vector<SatID> prnVec;
-            vector<double> rangeP2Vec;
-			vector<double> rangeVec;
-            vector<double> icorrVec;
-            vector<uchar> CNoVec;
-
-#pragma region Select Observable
-            // Apply editing criteria
-            if (rod.epochFlag == 0 || rod.epochFlag == 1)  // Begin usable data
-            {
-                Rinex3ObsData::DataMap::const_iterator it;
-
-                for (it = rod.obs.begin(); it != rod.obs.end(); it++)
-                {
-                    double P1(0.0), C1(0.0);
-                    char S1(0);
-                    try
-                    {
-                        C1 = rod.getObs((*it).first, indexC1).data;
-                        P1 = rod.getObs((*it).first, indexP1).data;
-                        S1 = rod.getObs((*it).first, indexCNoL1).data;
-                    }
-                    catch (...)
-                    {
-                        // Ignore this satellite if P1 is not found
-                        continue;
-                    }
-
-                    double ionocorr(0.0);
-                    if (indexP2 >= 0)
-                    {
-                        double P2(0.0);
-                        try
-                        {
-                            P2 = rod.getObs((*it).first, indexP2).data;
-                        }
-                        catch (...)
-                        {
-                            continue;
-                        }
-						if(abs(P2-C1)>1e2) continue;
-						rangeP2Vec.push_back(P2);
-                        ionocorr = 1.0 / (1.0 - gamma) * (C1 - P2);
-
-                    }
-
-                    prnVec.push_back((*it).first);
-                    CNoVec.push_back(S1);
-
-                    rangeVec.push_back(P1 /*- ionocorr /*- rod.clockOffset*C_MPS*/);
-                    icorrVec.push_back(ionocorr);
-                }
-#pragma endregion
-
-                //number of sats
-                int N = prnVec.size();
-               // cout << setprecision(12) << static_cast<YDSTime> (rod.time) ;
-                raimSolver.PrepareAutonomousSolution(rod.time, prnVec, rangeVec, SP3EphList, SVP);
-               // cout << " rejected SV ";
-                int rejSV = 0;
-                for (int j = 0; j<prnVec.size(); j++)
-                {
-                    if (prnVec[j].id > 0)
-                    {
-                        
-                        if (CNoVec[j] > 26)
-                        {
-                            N++;
-                            UseSat.push_back(true);
-                            GoodIndexes.push_back(j);
-                        }
-                        
-                        else
-                        {
-                            rejSV++;
-                            UseSat.push_back(false);
-                            cout <<" "<< prnVec[j].id << " SNR = " << (int)CNoVec[j];
-                        }
-                    }
-                    else{
-                        
-                        UseSat.push_back(false);
-                    }
-                }
-                if (rejSV > 0)
-                    cout << endl;
-
-                raimSolver.AutonomousPRSolution(rod.time, UseSat, SVP, tropModelPtr, false, n_iterate, converge, Sol, Cov, Resid, Slope);
-                raimSolver.RMSLimit = 3e6;
-
-  
-                raimSolver.RAIMCompute(rod.time,
-                    prnVec,
-                    rangeVec,
-                    SP3EphList,
-                    tropModelPtr);
-
-                os << setprecision(12) << static_cast<YDSTime> (rod.time) << " "<< Sol[0] << " " << Sol[1] << " " << Sol[2] << " " << n_iterate << " " << GoodIndexes.size()<<" "<< rejSV;
-				
-				double ssq(0.0);
-				for (auto var : Resid){
-					ssq+= var*var;
-                }
-					os << sqrt(ssq / (Resid.size() - 1));
-
-                os << endl;
-
-                //if (raimSolver.isValid()){
-
-                //    os << setprecision(12) << raimSolver.Solution[0] << " ";
-                //    os << raimSolver.Solution[1] << " ";
-                //    os << raimSolver.Solution[2];
-                //    os << raimSolver.Solution[3];
-                //    os << endl;
-
-                //}  
-                //else{
-                //      os << "0 0 0" << endl;
-                //}
-            } // End of 'if( rod.epochFlag == 0 || rod.epochFlag == 1 )'
-
-        }  // End of 'while( roffs >> rod )'
-
-    }
-    catch (Exception& e){
-        cerr << e << endl;
-    }
-    catch (...){
-        cerr << "Caught an unexpected exception." << endl;
-    }
-
-    os.close();
-    exit(0);
-
-} 
-
-void Autonomus::process2()
-{
-    ZeroTropModel tModel;
-    TropModel *tropo = &tModel;
-    PRSolution2 solverPR2;
-    solverPR2.isERCorr = (false);
-	solverLEO.maskEl =  confReader.fetchListValueAsDouble("Elmask");
-	solverLEO.maskSNR = confReader.fetchListValueAsInt("SNRmask");
-
-	ofstream os;
-	os.open("output.txt");
-
-	try {
-		// In order to throw exceptions, it is necessary to set the failbit
-		rin.exceptions(ios::failbit);
-		Rinex3ObsHeader roh;
-		Rinex3ObsData rod;
-
-		// Let's read the header
-		rin >> roh;
 #pragma region init observables indexes
 
         int indexC1 = roh.getObsIndex(L1CCodeID);
@@ -478,26 +253,22 @@ void Autonomus::process2()
 
 #pragma endregion
 
-        Position pos(0, 0, 0);
-		// Let's process all lines of observation data, one by one
-		while (rin >> rod)
-		{
-			int N = 0;
-		
-			vector<int> GoodIndexes;
-			// prepare for iteration loop
+        // Let's process all lines of observation data, one by one
+        while (rin >> rod)
+        {
+            vector<int> GoodIndexes;
+            // prepare for iteration loop
             Vector<double> Resid;
-			int n_iterate = 10;
-			vector<SatID> prnVec;
-			vector<double> rangeVec;
-			vector<uchar> SNRs;
-			vector<bool> UseSat;
+            int iter = 0;
+            vector<SatID> prnVec;
+            vector<double> rangeVec;
+            vector<uchar> SNRs;
+            vector<bool> UseSat;
 
-			int j = 0,res;
-			solverLEO.selectObservable(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs);
+            solverLEO.selectObservable(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs, true);
             solverLEO.Sol = 0.0;
             solverLEO.Conv = DBL_MAX;
-            pos = Position(0, 0, 0);
+
             for (size_t i = 0; i < prnVec.size(); i++)
             {
                 if (SNRs[i] >= solverLEO.maskSNR)
@@ -506,35 +277,31 @@ void Autonomus::process2()
                     UseSat.push_back(false);
             }
 
-            Matrix<double> SVP(prnVec.size(),4), Cov(4, 4);
-          //  solverPR2.PrepareAutonomousSolution(rod.time, prnVec, rangeVec, SP3EphList, SVP);
-            solverLEO.prepare(rod.time, prnVec, rangeVec, SP3EphList, ionoStore, pos, UseSat, SVP);
-			do
-			{
-                solverLEO.ajustParameters(rod.time,SVP, UseSat,  Cov, Resid,ionoStore, true);
-                pos.setECEF(solverLEO.Sol(0), solverLEO.Sol(1), solverLEO.Sol(2));
-				j++;
-                
-            } while (!(j < n_iterate) || (solverLEO.eps<solverLEO.Conv));
-            double RMS3D = sqrt(solverLEO.ps.variance());
+            Matrix<double> SVP(prnVec.size(), 4), Cov(4, 4);
 
+            solverLEO.prepare(rod.time, prnVec, rangeVec, SP3EphList, ionoStore, UseSat, SVP);
+            solverLEO.ajustParameters(rod.time, SVP, UseSat, Cov, Resid, ionoStore, iter, true);
 
-            RMS3D = RMS3D   *sqrt(Cov(0,0))
-            os << setprecision(12) << static_cast<YDSTime> (rod.time) << " " << pos[0] << " " << pos[1] << " " << pos[2] << " " << j << " " << prnVec.size()<<" "<<solverLEO.ps.size() <<" "<<   << endl;
-		}
-	}
-	catch (Exception& e) 
+            Position pos(solverLEO.Sol(0), solverLEO.Sol(1), solverLEO.Sol(2));
+
+            double RMS3D = 0;
+            double variance = solverLEO.ps.variance();
+            for (size_t i = 0; i < 3; i++)
+                RMS3D += variance*Cov(i, i);
+            RMS3D = sqrt(RMS3D);
+
+            os << setprecision(12) << static_cast<YDSTime> (rod.time) << " " << pos[0] << " " << pos[1] << " " << pos[2] << " " << iter << " " << prnVec.size() << " " << solverLEO.ps.size() << " " << RMS3D << endl;
+        }
+    }
+    catch (Exception& e)
     {
-		cerr << e << endl;
-	}
-	catch (...) 
+        cerr << e << endl;
+    }
+    catch (...)
     {
-		cerr << "Caught an unexpected exception." << endl;
-	}
-	os.close();
+        cerr << "Caught an unexpected exception." << endl;
+    }
+    os.close();
 
 }
 
-#pragma region 
-// End of 'if( rod.epochFlag == 0 || rod.epochFlag == 1 )'
-#pragma endregion
