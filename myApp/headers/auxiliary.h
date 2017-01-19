@@ -2,13 +2,13 @@
 #define AUXILIARY
 
 #include<string>
-#include<vector>
+#include<list>
 using namespace std;
 
 class auxiliary
 {
 public:
-    static int getAllFiles(string dir, vector<string> files);
+    static int getAllFiles(string &subDir, list<string> &files);
     
 
 };

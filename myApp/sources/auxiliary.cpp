@@ -2,7 +2,7 @@
 #include <direct.h>
 #include"auxiliary.h"
 
-int  auxiliary::getAllFiles(string subDir, vector<string> files)
+int  auxiliary::getAllFiles( string &subDir, list<string> &files)
 {
     files.clear();
 
@@ -11,8 +11,8 @@ int  auxiliary::getAllFiles(string subDir, vector<string> files)
     _getcwd(current_work_dir, sizeof(current_work_dir));
     string path = current_work_dir;
     //dir of interest
-    path += "\\" + subDir;
-
+    path += "\\" + subDir+"\\*";
+   
     WIN32_FIND_DATA FindFileData;
     HANDLE hf;
 
@@ -25,5 +25,8 @@ int  auxiliary::getAllFiles(string subDir, vector<string> files)
         } while (FindNextFile(hf, &FindFileData) != 0);
         FindClose(hf);
     }
-    return (files.size() > 0) ? 1 : 0;
+    if (files.size() < 3) return 0;
+    files.pop_front();
+    files.pop_front();
+    return 1;
 }

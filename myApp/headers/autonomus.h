@@ -14,18 +14,17 @@ public :
     bool loadEphemeris();
 	bool loadIono();
     bool loadClocks();
-    bool checkObsFile();
-	void process2();
+
     virtual void process();
 
 protected:
      
 private:
 
-	 char * L1CCodeID = "C1";
-	 char * L1PCodeID = "C1";
-	 char * L2CodeID = "C2W";
-	 char * L1CNo =    "S1C";
+	 const  char * L1CCodeID = "C1";
+     const char * L1PCodeID = "C1";
+     const char * L2CodeID = "C2W";
+     const char * L1CNo =    "S1C";
 
     // This field represents an option at command line interface (CLI)
     CommandOptionWithArg confFile;
@@ -43,6 +42,7 @@ private:
 	//
     PRSolutionLEO solverLEO;
 	IonoModelStore ionoStore;
+    list<string> rinesObsFiles;
 };
 
 #endif // !1

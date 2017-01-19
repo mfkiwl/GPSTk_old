@@ -1,11 +1,11 @@
+
 satDataFile      = PRN_GPS          , constellation data file
 precision        = 4                , number of decimal places in output file
-Elmask =  5.0, deg
+ElMask =  5.0, deg
 SNRmask = 26, dBHz
 
-#rinexObsFile = drb1001n0.13o
-rinexObsFile = GO_CONS_SST_RIN_1b_20130101T124004_20130101T140930_0001.13o
-SP3List = igs17212.sp3 igs17213.sp3 igs17214.sp3
-rinexClockFiles = igs17212.clk_30s igs17213.clk_30s igs17214.clk_30s
-IonoModelFiles = hour0010.13n
+RinesObsDir = GOCE
+EphemerisDir = EPH
+RinexClockDir = CLK_30S
+IonoModelFiles = NAV
 

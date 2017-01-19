@@ -1,4 +1,5 @@
 #include"autonomus.h"
+#include<list>
 
 typedef  unsigned char uchar;
 
@@ -74,7 +75,7 @@ bool Autonomus::loadConfig(char* path)
 
     return true;
 }
-
+//
 bool Autonomus::loadEphemeris()
 {
     // Set flags to reject satellites with bad or absent positional
@@ -82,17 +83,20 @@ bool Autonomus::loadEphemeris()
     SP3EphList.rejectBadPositions(true);
     SP3EphList.rejectBadClocks(true);
      
-    string sp3File;
-    while ((sp3File = confReader.fetchListValue("SP3List")) != "") {
+    list<string> files;
+    string subdir = confReader.fetchListValue("EphemerisDir");
+    auxiliary::getAllFiles(subdir, files);
 
+    for (auto file : files)
+    {
         // Try to load each ephemeris file
         try {
 
-            SP3EphList.loadFile(sp3File);
+            SP3EphList.loadFile(file);
         }
         catch (FileMissingException& e) {
             // If file doesn't exist, issue a warning
-            cerr << "SP3 file '" << sp3File << "' doesn't exist or you don't "
+            cerr << "SP3 file '" << file << "' doesn't exist or you don't "
                 << "have permission to read it. Skipping it." << endl;
 
             return false;
@@ -100,20 +104,22 @@ bool Autonomus::loadEphemeris()
     }
     return true;
 }
-//
+//reading clock
 bool Autonomus::loadClocks()
 {
-    //reading clock
-    string ClkFile;
-    while ((ClkFile = confReader.fetchListValue("rinexClockFiles" )) != "") 
+    list<string> files;
+    string subdir = confReader.fetchListValue("RinexClockDir");
+    auxiliary::getAllFiles(subdir, files);
+
+    for (auto file : files)
     {
         // Try to load each ephemeris file
         try {
-            SP3EphList.loadRinexClockFile(ClkFile);
+            SP3EphList.loadRinexClockFile(file);
         }
         catch (FileMissingException& e) {
             // If file doesn't exist, issue a warning
-            cerr << "Rinex clock file '" << ClkFile << "' doesn't exist or you don't "
+            cerr << "Rinex clock file '" << file << "' doesn't exist or you don't "
                 << "have permission to read it. Skipping it." << endl;
             return false;
         }
@@ -121,42 +127,13 @@ bool Autonomus::loadClocks()
     return true;
 }
 
-//
-bool Autonomus::checkObsFile()
-{
-    // Enable exceptions
-   // rin.exceptions(ios::failbit);
-    // Try to open Rinex observations file
-    try {
-        string path = confReader("rinexObsFile");
-        cout << path << endl;
-        // Open Rinex observations file in read-only mode
-        rin.open(path, std::ios::in);
-        return true;
-    }
-    catch (...) {
-
-        cerr << "Problem opening file '"
-            << confReader.getValue("rinexObsFile")
-            << "'." << endl;
-
-        cerr << "Maybe it doesn't exist or you don't have "
-            << "proper read permissions."
-            << endl;
-
-        // Close current Rinex observation stream
-        rin.close();
-
-        return false;
-
-    }  // End of 'try-catch' block
-}
-
 bool  Autonomus:: loadIono()
 {
-	// Activate failbit to enable exceptions
-    string ionoFile;
-    while ((ionoFile = confReader.fetchListValue("IonoModelFiles")) != "")
+    list<string> files;
+    string subdir = confReader.fetchListValue("RinexNavFilesDir");
+    auxiliary::getAllFiles(subdir, files);
+
+    for (auto file : files)
     {
         try
         {
@@ -164,7 +141,7 @@ bool  Autonomus:: loadIono()
             Rinex3NavStream rNavFile;
             Rinex3NavHeader rNavHeader;
 
-            rNavFile.open(ionoFile.c_str(), std::ios::in);
+            rNavFile.open(file.c_str(), std::ios::in);
             rNavFile >> rNavHeader;
 
             long week = rNavHeader.mapTimeCorr["GPUT"].refWeek;
@@ -182,7 +159,7 @@ bool  Autonomus:: loadIono()
             }
             else
             {
-                cerr << "WARNING: Navigation file " << ionoFile
+                cerr << "WARNING: Navigation file " << file
                     << " doesn't have valid ionospheric correction parameters." << endl;
             }
 
@@ -190,7 +167,7 @@ bool  Autonomus:: loadIono()
         }
         catch (...)
         {
-            cerr << "Problem opening file " <<ionoFile << endl;
+            cerr << "Problem opening file " << file << endl;
             cerr << "Maybe it doesn't exist or you don't have proper read "
                 << "permissions." << endl;
             exit(-1);
@@ -200,107 +177,116 @@ bool  Autonomus:: loadIono()
 }
 void Autonomus::process()
 {
-    solverLEO.maskEl = confReader.fetchListValueAsDouble("Elmask");
+    solverLEO.maskEl = confReader.fetchListValueAsDouble("ElMask");
     solverLEO.maskSNR = confReader.fetchListValueAsInt("SNRmask");
 
+    string subdir = confReader.fetchListValue("RinesObsDir");
+    auxiliary::getAllFiles(subdir, rinesObsFiles);
     ofstream os;
     os.open("output.txt");
+    for (auto obsFile : rinesObsFiles)
+    {
+        cout << obsFile << endl;
 
-    try {
+        try {
+            // Open Rinex observations file in read-only mode
+            rin.open(obsFile, std::ios::in);
 
-        rin.exceptions(ios::failbit);
-        Rinex3ObsHeader roh;
-        Rinex3ObsData rod;
+            rin.exceptions(ios::failbit);
+            Rinex3ObsHeader roh;
+            Rinex3ObsData rod;
 
-        //read the header
-        rin >> roh;
+            //read the header
+            rin >> roh;
 
 #pragma region init observables indexes
 
-        int indexC1 = roh.getObsIndex(L1CCodeID);
-        int indexCNoL1;
-        try
-        {
-            indexCNoL1 = roh.getObsIndex(L1CNo);
-        }
-        catch (...)
-        {
-            cerr << "The observation file doesn't have L1 C/No" << endl;
-            exit(1);
-        }
-        int indexP1;
-        try
-        {
-            indexP1 = roh.getObsIndex(L1PCodeID);
-            cout << "L1 PRange from " << L1PCodeID << " was used" << endl;
-        }
-        catch (...)
-        {
-            cerr << "The observation file doesn't have P1 pseudoranges." << endl;
-            exit(1);
-        }
+            int indexC1 = roh.getObsIndex(L1CCodeID);
+            int indexCNoL1;
+            try
+            {
+                indexCNoL1 = roh.getObsIndex(L1CNo);
+            }
+            catch (...)
+            {
+                cerr << "The observation file doesn't have L1 C/No" << endl;
+                exit(1);
+            }
+            int indexP1;
+            try
+            {
+                indexP1 = roh.getObsIndex(L1PCodeID);
+                cout << "L1 PRange from " << L1PCodeID << " was used" << endl;
+            }
+            catch (...)
+            {
+                cerr << "The observation file doesn't have P1 pseudoranges." << endl;
+                exit(1);
+            }
 
-        int indexP2;
-        try
-        {
-            indexP2 = roh.getObsIndex(L2CodeID);
-            cout << "iono-free with " << L2CodeID << " was used" << endl;
-        }
-        catch (...)
-        {
-            indexP2 = -1;
-        }
+            int indexP2;
+            try
+            {
+                indexP2 = roh.getObsIndex(L2CodeID);
+                cout << "iono-free with " << L2CodeID << " was used" << endl;
+            }
+            catch (...)
+            {
+                indexP2 = -1;
+            }
 
 #pragma endregion
 
-        // Let's process all lines of observation data, one by one
-        while (rin >> rod)
-        {
-            vector<int> GoodIndexes;
-            // prepare for iteration loop
-            Vector<double> Resid;
-            int iter = 0;
-            vector<SatID> prnVec;
-            vector<double> rangeVec;
-            vector<uchar> SNRs;
-            vector<bool> UseSat;
-
-            solverLEO.selectObservable(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs, true);
-            solverLEO.Sol = 0.0;
-            solverLEO.Conv = DBL_MAX;
-
-            for (size_t i = 0; i < prnVec.size(); i++)
+            // Let's process all lines of observation data, one by one
+            while (rin >> rod)
             {
-                if (SNRs[i] >= solverLEO.maskSNR)
-                    UseSat.push_back(true);
-                else
-                    UseSat.push_back(false);
+                vector<int> GoodIndexes;
+                // prepare for iteration loop
+                Vector<double> Resid;
+                int iter = 0;
+                vector<SatID> prnVec;
+                vector<double> rangeVec;
+                vector<uchar> SNRs;
+                vector<bool> UseSat;
+
+                solverLEO.selectObservable(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs, true);
+                solverLEO.Sol = 0.0;
+                solverLEO.Conv = DBL_MAX;
+
+                for (size_t i = 0; i < prnVec.size(); i++)
+                {
+                    if (SNRs[i] >= solverLEO.maskSNR)
+                        UseSat.push_back(true);
+                    else
+                        UseSat.push_back(false);
+                }
+
+                Matrix<double> SVP(prnVec.size(), 4), Cov(4, 4);
+
+                solverLEO.prepare(rod.time, prnVec, rangeVec, SP3EphList, ionoStore, UseSat, SVP);
+                solverLEO.ajustParameters(rod.time, SVP, UseSat, Cov, Resid, ionoStore, iter, true);
+
+                Position pos(solverLEO.Sol(0), solverLEO.Sol(1), solverLEO.Sol(2));
+
+                double RMS3D = 0;
+
+                double variance = solverLEO.ps.variance();
+                for (size_t i = 0; i < 3; i++)
+                    RMS3D += variance*Cov(i, i);
+                RMS3D = sqrt(RMS3D);
+
+                os << setprecision(12) << static_cast<YDSTime> (rod.time) << " " << pos[0] << " " << pos[1] << " " << pos[2] << " " << iter << " " << prnVec.size() << " " << sqrt(variance)/*solverLEO.ps.size() */ << " " << RMS3D << endl;
             }
-
-            Matrix<double> SVP(prnVec.size(), 4), Cov(4, 4);
-
-            solverLEO.prepare(rod.time, prnVec, rangeVec, SP3EphList, ionoStore, UseSat, SVP);
-            solverLEO.ajustParameters(rod.time, SVP, UseSat, Cov, Resid, ionoStore, iter, true);
-
-            Position pos(solverLEO.Sol(0), solverLEO.Sol(1), solverLEO.Sol(2));
-
-            double RMS3D = 0;
-
-            double variance = solverLEO.ps.variance();
-            for (size_t i = 0; i < 3; i++)
-                RMS3D += variance*Cov(i, i);
-            RMS3D = sqrt(RMS3D);
-
-            os << setprecision(12) << static_cast<YDSTime> (rod.time) << " " << pos[0] << " " << pos[1] << " " << pos[2] << " " << iter << " " << prnVec.size() << " " << sqrt(variance)/*solverLEO.ps.size() */<< " " << RMS3D << endl;
         }
-    }
-    catch (Exception& e)
-    {
-        cerr << e << endl;
-    }
-    catch (...)
-    {
-        cerr << "Caught an unexpected exception." << endl;
+
+        catch (Exception& e)
+        {
+            cerr << e << endl;
+        }
+        catch (...)
+        {
+            cerr << "Caught an unexpected exception." << endl;
+        }
     }
     os.close();
 
