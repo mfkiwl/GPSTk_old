@@ -285,12 +285,13 @@ void Autonomus::process()
             Position pos(solverLEO.Sol(0), solverLEO.Sol(1), solverLEO.Sol(2));
 
             double RMS3D = 0;
+
             double variance = solverLEO.ps.variance();
             for (size_t i = 0; i < 3; i++)
                 RMS3D += variance*Cov(i, i);
             RMS3D = sqrt(RMS3D);
 
-            os << setprecision(12) << static_cast<YDSTime> (rod.time) << " " << pos[0] << " " << pos[1] << " " << pos[2] << " " << iter << " " << prnVec.size() << " " << solverLEO.ps.size() << " " << RMS3D << endl;
+            os << setprecision(12) << static_cast<YDSTime> (rod.time) << " " << pos[0] << " " << pos[1] << " " << pos[2] << " " << iter << " " << prnVec.size() << " " << sqrt(variance)/*solverLEO.ps.size() */<< " " << RMS3D << endl;
         }
     }
     catch (Exception& e)

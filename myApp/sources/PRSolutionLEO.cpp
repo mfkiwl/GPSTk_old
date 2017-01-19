@@ -202,7 +202,7 @@ int  PRSolutionLEO::ajustParameters(
         // test for convergence
         Conv = norm(dX);
         iter++;
-    } while ((maxIter>iter) || (eps<Conv));
+    } while ((maxIter<iter) || (eps<Conv));
 
 
 };

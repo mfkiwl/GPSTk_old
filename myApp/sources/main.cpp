@@ -16,5 +16,5 @@ int main(int argc, char *argv[])
  //  cout << "Clocks Loading " << proc.loadClocks() << endl;
    cout << "IonoModel Loading" << proc.loadIono() << endl;
    cout << "Check files with obs " << proc.checkObsFile() << endl;
-   proc.process2();
+   proc.process();
 }
