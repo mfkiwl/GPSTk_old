@@ -123,11 +123,10 @@
 #include"ProcessingList.hpp"
 //
 #include"actions.h"
-#include"SP3Aux.h"
 #include"ex9.h"
 #include"PRSolutionLEO.h"
 #include"autonomus.h"
-
+#include"auxiliary.h"
 
 // TODO: reference additional headers your program requires here
 

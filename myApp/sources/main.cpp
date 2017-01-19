@@ -8,6 +8,10 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+    vector<string> files;
+    cout << auxiliary::getAllFiles("subdir1", files) << endl;
+    for (auto it : files)
+        cout << it << endl;
 
     Autonomus  proc(argv[0],"autonomus processing");
 

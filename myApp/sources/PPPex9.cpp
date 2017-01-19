@@ -100,15 +100,10 @@ int Actions::CalcPPP( char * arg0)
     // SP3EphList = rawSP3;
 
     int deci = 30;
-    SP3Aux::interpSP3Eph(rawSP3, deci, SP3EphList);
-    cout << "Ephemeris and clocks interpolated\n";
-
-
 
     // Declare a NeillTropModel object, setting the defaults
     NeillTropModel neillTM(nominalPos.getAltitude(),
         nominalPos.getGeodeticLatitude(), 136);
-
 
     // This is the GNSS data structure that will hold all the
     // GNSS-related information
@@ -129,14 +124,13 @@ int Actions::CalcPPP( char * arg0)
 
     // Declare a basic modeler
     BasicModel basic(nominalPos, SP3EphList);
-
-
+    
     // Objects to mark cycle slips
     LICSDetector2 markCSLI;     // Checks LI cycle slips
     MWCSDetector markCSMW;      // Checks Merbourne-Wubbena cycle slips
 
 
-                                // Object to compute tidal effects
+    // Object to compute tidal effects
     SolidTides  solid;
 
     // Ocean loading model
@@ -148,14 +142,14 @@ int Actions::CalcPPP( char * arg0)
     // Vector from ONSA antenna ARP to L1 phase center [UEN] (AOAD/M_B)
     Triple offsetL1(0.110, 0.000, 0.000);   // Units in meters
 
-                                                      // Vector from ONSA antenna ARP to L2 phase center [UEN] (AOAD/M_B)
+    // Vector from ONSA antenna ARP to L2 phase center [UEN] (AOAD/M_B)
     Triple offsetL2(0.128, 0.0000, 0.000);  // Units in meters
 
-                                                      // Vector from monument to antenna ARP [UEN] for ONSA station
+    // Vector from monument to antenna ARP [UEN] for ONSA station
     Triple offsetARP(0.004, 0.0, 0.0);    // Units in meters
 
 
-                                        // Declare an object to correct observables to monument
+    // Declare an object to correct observables to monument
     CorrectObservables corr(SP3EphList);
     ((corr.setNominalPosition(nominalPos)).setL1pc(offsetL1)).setL2pc(offsetL2);
     corr.setMonument(offsetARP);
@@ -333,7 +327,8 @@ int Actions::CalcPPP( char * arg0)
             }
 
         }  // End of position printing
-        else{
+        else
+        {
             // Print here the model results
             // First, define types we want to keep
             TypeIDSet types;

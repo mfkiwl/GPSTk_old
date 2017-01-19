@@ -101,7 +101,6 @@ void ex9::printModel(ofstream& modelfile,
 	const gnssRinex& gData,
 	int   precision)
 {
-
 	// Prepare for printing
 	modelfile << fixed << setprecision(precision);
 

@@ -146,7 +146,7 @@ bool ex9::pocessStataion(const string& station, const string& outName)
     // Load station nominal position
     double xn(confReader.fetchListValueAsDouble("nominalPosition", station));
     double yn(confReader.fetchListValueAsDouble("nominalPosition", station));
-    double zn(confReader.fetchListValueAsDouble("nominalPosition", station)); \
+    double zn(confReader.fetchListValueAsDouble("nominalPosition", station));
 
         // The former peculiar code is possible because each time we
         // call a 'fetchListValue' method, it takes out the first element
@@ -242,7 +242,7 @@ bool ex9::pocessStataion(const string& station, const string& outName)
 
                                          // Declare a basic modeler
     BasicModel basic(nominalPos, SP3EphList);
-
+    
     // Set the minimum elevation
     basic.setMinElev(confReader.getValueAsDouble("cutOffElevation", station));
 
@@ -253,7 +253,7 @@ bool ex9::pocessStataion(const string& station, const string& outName)
 
     // Add to processing list
     pList.push_back(basic);
-
+   
     // Object to remove eclipsed satellites
     EclipsedSatFilter eclipsedSV;
     pList.push_back(eclipsedSV);       // Add to processing list
@@ -344,11 +344,9 @@ bool ex9::pocessStataion(const string& station, const string& outName)
     // We will need this value later for printing
     double drytropo(neillTM.dry_zenith_delay());
 
-
     // Object to compute the tropospheric data
     ComputeTropModel computeTropo(neillTM);
     pList.push_back(computeTropo);       // Add to processing list
-
 
                                          // Object to compute ionosphere-free combinations to be used
                                          // as observables in the PPP processing
@@ -369,7 +367,6 @@ bool ex9::pocessStataion(const string& station, const string& outName)
     linear2.addLinear(comb.lcCombination);
     pList.push_back(linear2);       // Add to processing list
 
-
                                     // Declare a simple filter object to screen PC
     SimpleFilter pcFilter;
     pcFilter.setFilteredType(TypeID::PC);
@@ -385,7 +382,6 @@ bool ex9::pocessStataion(const string& station, const string& outName)
         pList.push_back(pcFilter);       // Add to processing list
     }
 
-
     // Object to align phase with code measurements
     PhaseCodeAlignment phaseAlign;
     pList.push_back(phaseAlign);       // Add to processing list
@@ -396,35 +392,28 @@ bool ex9::pocessStataion(const string& station, const string& outName)
     linear3.addLinear(comb.lcPrefit);
     pList.push_back(linear3);       // Add to processing list
 
-
                                     // Declare a base-changing object: From ECEF to North-East-Up (NEU)
     XYZ2NEU baseChange(nominalPos);
     // We always need both ECEF and NEU data for 'ComputeDOP', so add this
     pList.push_back(baseChange);
 
-
     // Object to compute DOP values
     ComputeDOP cDOP;
     pList.push_back(cDOP);       // Add to processing list
 
-
                                  // Get if we want results in ECEF or NEU reference system
     bool isNEU(confReader.getValueAsBoolean("USENEU", station));
-
 
     // Declare solver objects
     SolverPPP   pppSolver(isNEU);
     SolverPPPFB fbpppSolver(isNEU);
 
-
     // Get if we want 'forwards-backwards' or 'forwards' processing only
     int cycles(confReader.getValueAsInt("forwardBackwardCycles", station));
-
 
     // Get if we want to process coordinates as white noise
     bool isWN(confReader.getValueAsBoolean("coordinatesAsWhiteNoise",
         station));
-
 
     // White noise stochastic model
     WhiteNoiseModel wnM(100.0);      // 100 m of sigma
@@ -463,11 +452,9 @@ bool ex9::pocessStataion(const string& station, const string& outName)
        // Object to compute tidal effects
     SolidTides solid;
 
-
     // Configure ocean loading model
     OceanLoading ocean;
     ocean.setFilename(confReader.getValue("oceanLoadingFile", station));
-
 
     // Numerical values (xp, yp) are pole displacements (arcsec).
     double xp(confReader.fetchListValueAsDouble("poleDisplacements",
@@ -478,15 +465,12 @@ bool ex9::pocessStataion(const string& station, const string& outName)
     PoleTides pole;
     pole.setXY(xp, yp);
 
-
     // This is the GNSS data structure that will hold all the
     // GNSS-related information
     gnssRinex gRin;
 
-
     // Prepare for printing
     int precision(confReader.getValueAsInt("precision", station));
-
 
     ofstream outfile;
     outfile.open(outName.c_str(), ios::out);
@@ -505,7 +489,6 @@ bool ex9::pocessStataion(const string& station, const string& outName)
 
 
     //// *** Now comes the REAL forwards processing part *** ////
-
 
     // Loop over all data epochs
     while (rin >> gRin){
@@ -630,7 +613,7 @@ bool ex9::pocessStataion(const string& station, const string& outName)
         outfile.close();
 
         // Go process next station
-        return false;;
+        return false;
 
     }  // End of 'try-catch' block
 
@@ -679,8 +662,7 @@ bool ex9::pocessStataion(const string& station, const string& outName)
 //
 bool ex9:: checkObsFile(const string& station)
 {
-    // Enable exceptions
-    //rin.exceptions(ios::failbit);
+
     // Try to open Rinex observations file
     try{
         string path = confReader("rinexObsFile", station);
@@ -720,24 +702,6 @@ bool ex9::loadSatsData(const string& station)
     SP3EphList.rejectBadPositions(true);
     SP3EphList.rejectBadClocks(true);
 
-    // CNQ - enableDataGapCheck, setGapInterval, enableIntervalCheck, and setMaxInterval 
-    //       are not SP3EphemerisStore member functions.
-    //         // Read if we should check for data gaps.
-    //      if ( confReader.getValueAsBoolean( "checkGaps", station ) )
-    //      {
-    //         SP3EphList.enableDataGapCheck();
-    //         SP3EphList.setGapInterval(
-    //                     confReader.getValueAsDouble("SP3GapInterval",station) );
-    //      }
-    //
-    //         // Read if we should check for too wide interpolation intervals
-    //      if ( confReader.getValueAsBoolean( "checkInterval", station ) )
-    //      {
-    //         SP3EphList.enableIntervalCheck();
-    //         SP3EphList.setMaxInterval(
-    //                    confReader.getValueAsDouble("maxSP3Interval",station) );
-    //      }
-    
     // Load all the SP3 ephemerides files from variable list
     string sp3File;
     while ((sp3File = confReader.fetchListValue("SP3List", station)) != ""){
