@@ -243,15 +243,14 @@ void Autonomus::process()
                 vector<int> GoodIndexes;
                 // prepare for iteration loop
                 Vector<double> Resid;
-                int iter = 0;
+
                 vector<SatID> prnVec;
                 vector<double> rangeVec;
                 vector<uchar> SNRs;
                 vector<bool> UseSat;
 
-                solverLEO.selectObservable(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs, true);
+                solverLEO.selectObservable(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs, false);
                 solverLEO.Sol = 0.0;
-                solverLEO.Conv = DBL_MAX;
 
                 for (size_t i = 0; i < prnVec.size(); i++)
                 {
@@ -264,18 +263,12 @@ void Autonomus::process()
                 Matrix<double> SVP(prnVec.size(), 4), Cov(4, 4);
 
                 solverLEO.prepare(rod.time, prnVec, rangeVec, SP3EphList, ionoStore, UseSat, SVP);
-                solverLEO.ajustParameters(rod.time, SVP, UseSat, Cov, Resid, ionoStore, iter, true);
+                solverLEO.ajustParameters(rod.time, SVP, UseSat, Cov, Resid, ionoStore,  false);
 
                 Position pos(solverLEO.Sol(0), solverLEO.Sol(1), solverLEO.Sol(2));
 
-                double RMS3D = 0;
 
-                double variance = solverLEO.ps.variance();
-                for (size_t i = 0; i < 3; i++)
-                    RMS3D += variance*Cov(i, i);
-                RMS3D = sqrt(RMS3D);
-
-                os << setprecision(12) << static_cast<YDSTime> (rod.time) << " " << pos[0] << " " << pos[1] << " " << pos[2] << " " << iter << " " << prnVec.size() << " " << sqrt(variance)/*solverLEO.ps.size() */ << " " << RMS3D << endl;
+                os << setprecision(12) << static_cast<YDSTime> (rod.time) << solverLEO.printSolution(UseSat) << endl;
             }
         }
 

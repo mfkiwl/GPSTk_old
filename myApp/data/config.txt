@@ -7,5 +7,5 @@ SNRmask = 26, dBHz
 RinesObsDir = GOCE
 EphemerisDir = EPH
 RinexClockDir = CLK_30S
-IonoModelFiles = NAV
+RinexNavFilesDir = NAV
 
