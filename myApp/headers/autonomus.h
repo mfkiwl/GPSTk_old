@@ -1,8 +1,11 @@
 #ifndef AUTONOMUS
 #define AUTONOMUS
 #include"stdafx.h"
+#include"PRSolutionLEO.h"
 
 using namespace gpstk;
+typedef  unsigned char uchar;
+
 
 class Autonomus :public BasicFramework
 {
@@ -35,8 +38,6 @@ private:
     // Configuration file reader
     ConfDataReader confReader;
 
-    //Input observation file stream
-    Rinex3ObsStream rin;
     // object to handle precise ephemeris and clocks
     SP3EphemerisStore SP3EphList;
 	//

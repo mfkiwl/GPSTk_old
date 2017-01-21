@@ -1,11 +1,25 @@
-
+#generic 
+##############################################################################
 satDataFile      = PRN_GPS          , constellation data file
-precision        = 4                , number of decimal places in output file
-ElMask =  5.0, deg
-SNRmask = 26, dBHz
+antennaDataFile  = I08.ATX
 
+#masks
+##############################################################################
+ElMask =  5.0, deg
+SNRmask = 20, dBHz
+
+#data direcories
+##############################################################################
 RinesObsDir = GOCE
 EphemerisDir = EPH
 RinexClockDir = CLK_30S
 RinexNavFilesDir = NAV
+
+#process settings
+##############################################################################
+#ionospheric correction for RP solution 
+#ionoCorrectionType==0 -> no apply iono correction
+#ionoCorrectionType==1 -> use Klobuchar model
+#ionoCorrectionType==2 -> use L3 combination 
+PRionoCorrType = 1;
 

@@ -1,8 +1,6 @@
 #include"autonomus.h"
 #include<list>
 
-typedef  unsigned char uchar;
-
 Autonomus:: Autonomus(char* arg0, char * discr )
     :
     BasicFramework(arg0,
@@ -177,8 +175,13 @@ bool  Autonomus:: loadIono()
 }
 void Autonomus::process()
 {
+    int badSol = 0;
     solverLEO.maskEl = confReader.fetchListValueAsDouble("ElMask");
     solverLEO.maskSNR = confReader.fetchListValueAsInt("SNRmask");
+    solverLEO.ionoType =  (PRIonoCorrType)confReader.fetchListValueAsInt("PRionoCorrType");
+     
+    cout << "mask El " << solverLEO.maskEl << endl;
+    cout << "mask SNR " <<(int) solverLEO.maskSNR << endl;
 
     string subdir = confReader.fetchListValue("RinesObsDir");
     auxiliary::getAllFiles(subdir, rinesObsFiles);
@@ -189,6 +192,9 @@ void Autonomus::process()
         cout << obsFile << endl;
 
         try {
+
+            //Input observation file stream
+            Rinex3ObsStream rin;
             // Open Rinex observations file in read-only mode
             rin.open(obsFile, std::ios::in);
 
@@ -210,29 +216,32 @@ void Autonomus::process()
             catch (...)
             {
                 cerr << "The observation file doesn't have L1 C/No" << endl;
-                exit(1);
+                continue;
             }
             int indexP1;
             try
             {
                 indexP1 = roh.getObsIndex(L1PCodeID);
-                cout << "L1 PRange from " << L1PCodeID << " was used" << endl;
+                cout << "L1 PRange from " << L1PCodeID <<  endl;
             }
             catch (...)
             {
-                cerr << "The observation file doesn't have P1 pseudoranges." << endl;
-                exit(1);
+                cerr << "The observation file doesn't have L1 pseudoranges." << endl;
+                continue;
             }
 
             int indexP2;
             try
             {
                 indexP2 = roh.getObsIndex(L2CodeID);
-                cout << "iono-free with " << L2CodeID << " was used" << endl;
+                cout << "L1 PRange from " << L2CodeID <<  endl;
             }
             catch (...)
             {
                 indexP2 = -1;
+                if(solverLEO.ionoType==PRIonoCorrType::IF) 
+                    cout << "The observation file doesn't have L2 pseudoranges" <<  endl;
+                continue;
             }
 
 #pragma endregion
@@ -240,7 +249,9 @@ void Autonomus::process()
             // Let's process all lines of observation data, one by one
             while (rin >> rod)
             {
-                vector<int> GoodIndexes;
+                int GoodSats = 0;
+                int res = 0;
+
                 // prepare for iteration loop
                 Vector<double> Resid;
 
@@ -249,29 +260,38 @@ void Autonomus::process()
                 vector<uchar> SNRs;
                 vector<bool> UseSat;
 
-                solverLEO.selectObservable(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs, false);
+                solverLEO.selectObservable(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs, true);
                 solverLEO.Sol = 0.0;
 
                 for (size_t i = 0; i < prnVec.size(); i++)
                 {
                     if (SNRs[i] >= solverLEO.maskSNR)
+                    {
                         UseSat.push_back(true);
+                        GoodSats++;
+                    }
                     else
                         UseSat.push_back(false);
                 }
+                os << setprecision(12) << static_cast<YDSTime> (rod.time) << " ";
+                if (GoodSats > 4)
+                {
+                    Matrix<double> SVP(prnVec.size(), 4), Cov(4, 4);
 
-                Matrix<double> SVP(prnVec.size(), 4), Cov(4, 4);
+                    solverLEO.prepare(rod.time, prnVec, rangeVec, SP3EphList,  UseSat, SVP);
+                    res = solverLEO.ajustParameters(rod.time, SVP, UseSat, Cov, Resid, ionoStore);
+                    os << res;
+                
+                }
+                else
+                    res = 0;
 
-                solverLEO.prepare(rod.time, prnVec, rangeVec, SP3EphList, ionoStore, UseSat, SVP);
-                solverLEO.ajustParameters(rod.time, SVP, UseSat, Cov, Resid, ionoStore,  false);
+                os << solverLEO.printSolution(UseSat) << endl;
+                if (res != 1) badSol++;
 
-                Position pos(solverLEO.Sol(0), solverLEO.Sol(1), solverLEO.Sol(2));
-
-
-                os << setprecision(12) << static_cast<YDSTime> (rod.time) << solverLEO.printSolution(UseSat) << endl;
             }
+            rin.close();
         }
-
         catch (Exception& e)
         {
             cerr << e << endl;
@@ -280,8 +300,9 @@ void Autonomus::process()
         {
             cerr << "Caught an unexpected exception." << endl;
         }
+
     }
     os.close();
-
+    cout << "bad Solutions " << badSol<<endl;
 }
 

@@ -38,7 +38,7 @@ void  PRSolutionLEO::selectObservable(
             }
 
             double ionocorr(0.0);
-            if (iL2Code >= 0)
+            if (ionoType==PRIonoCorrType::IF)
             {
                 double P2(0.0);
                 try
@@ -49,9 +49,9 @@ void  PRSolutionLEO::selectObservable(
                 {
                     continue;
                 }
-                if (abs(P2 - C1) > 1e2) continue;
+                if (P2 == 0) continue;
                 ionocorr = 1.0 / (1.0 - gamma) * (C1 - P2);
-
+                C1 -= ionocorr;
             }
 
             PRNs.push_back((*it).first);
@@ -67,7 +67,6 @@ void PRSolutionLEO::prepare(
     vector<SatID> &IDs,
     const vector<double> &PRs,
     const XvtStore<SatID>& Eph,
-    const IonoModelStore &iono,
     vector<bool> &useSat,
     Matrix<double> &SVP)
 {
@@ -120,16 +119,16 @@ int  PRSolutionLEO::ajustParameters(
     vector<bool> &useSat,
     Matrix<double>& Cov,
     Vector<double>& Resid,
-    IonoModelStore &iono,
-    bool isApplyIono
+    IonoModelStore &iono
 )
 {
-    int  j, n, N;
+    int   n, N;
     size_t i;
-    iter = 0;
+    this->iter = 0;
     double conv = DBL_MAX;
     do
     {
+       
         // find the number of good satellites
         for (N = 0, i = 0; i < useSat.size(); i++)
         {
@@ -149,6 +148,7 @@ int  PRSolutionLEO::ajustParameters(
 
         for (n = 0, i = 0; i < useSat.size(); i++)
         {
+            if (!useSat[i]) continue;
             double iodel(0.0);
             if (conv < 100 && useSat[i])
             {
@@ -159,13 +159,12 @@ int  PRSolutionLEO::ajustParameters(
                     useSat[i] = false;
                     continue;
                 }
-                if (isApplyIono)
+                if (ionoType==PRIonoCorrType::Klobuchar)
                 {
                     double azm = PosRX.azimuth(SVpos);
                     double iodel = iono.getCorrection(t, PosRX, elv, azm);
                 }
             }
-            if (!useSat[i]) continue;
 
             double rho = RSS(SVP(i, 0) - Sol(0), SVP(i, 1) - Sol(1), SVP(i, 2) - Sol(2));
 
@@ -183,6 +182,7 @@ int  PRSolutionLEO::ajustParameters(
             ps.add(Resid(n));
             n++;
         }
+        if (n < 4) return -1;
 
         PT = transpose(P);
         Cov = PT * P;
@@ -191,7 +191,6 @@ int  PRSolutionLEO::ajustParameters(
         {
             Cov = inverseSVD(Cov);
         }
-        //try { Cov = inverseLUD(Cov); }
         catch (SingularMatrixException& sme)
         {
             return -2;
@@ -202,18 +201,15 @@ int  PRSolutionLEO::ajustParameters(
         Sol += dX;
         // test for convergence
         conv = norm(dX);
-        iter++;
-
-    } while ((maxIter<iter) || (eps<conv));
+        this->iter++;
+        
+        if (this->iter== maxIter) break;
+    } while (eps<conv);
 
     calcStat(Resid, Cov);
 
-    if (sigma > 100)
-    {
-
-        return recalc(0, t, SVP, useSat, iono, isApplyIono);
-
-    }
+    if (sigma > sigmaMax)
+        return catchSatByResid(t, SVP, useSat, iono);
 
     return 1;
 };
@@ -221,7 +217,6 @@ int  PRSolutionLEO::ajustParameters(
 void PRSolutionLEO::calcStat(Vector<double> resid, Matrix<double> Cov)
 {
     RMS3D = 0, PDOP = 0;
-
     double variance = ps.variance();
     this->sigma = sqrt(variance);
 
@@ -230,33 +225,32 @@ void PRSolutionLEO::calcStat(Vector<double> resid, Matrix<double> Cov)
         RMS3D += variance*Cov(i, i);
         PDOP += Cov(i, i);
     }
+    PDOP = sqrt(PDOP);
     RMS3D = sqrt(RMS3D);
 }
 
 string PRSolutionLEO::printSolution(const vector<bool> &useSat)
 {
     std::ostringstream strs;
-    strs << setprecision(12) << " " << Sol(0) << " " << Sol(1) << " " << Sol(2) << " " << iter << " " << useSat.size() << " " << ps.size() << " " << sigma << " " << RMS3D;
+    strs << setprecision(12) << " " << Sol(0) << " " << Sol(1) << " " << Sol(2) << " " << iter << " " << useSat.size() << " " << ps.size() << " " <<setprecision(3)<< sigma << " " << RMS3D<<" "<<PDOP;
     return strs.str();
 }
 
-int PRSolutionLEO::recalc(
-    int i_ex,
+int PRSolutionLEO::catchSatByResid(
     const CommonTime &t,
     const Matrix<double> &SVP,
     vector<bool> &useSat,
-    IonoModelStore &iono,
-    bool isApplyIono)
+    IonoModelStore &iono )
 {
-    for (int _j = 0; _j < useSat.size(); _j++)
+    
+    for (int k = 0; k < useSat.size(); k++)
     {
-        if (!useSat[_j]) continue;
+        if (!useSat[k]) continue;
 
-        useSat[_j] = false;
+        useSat[k] = false;
 
         double conv = DBL_MAX;
         int iter_ = 0;
-        int  j;
 
         int N = 0;
         // find the number of good satellites
@@ -270,22 +264,24 @@ int PRSolutionLEO::recalc(
         Matrix<double> P(N, 4), PT(4, N), G(4, N), Cov(4, 4);
 
         //
-        while (1)
+        do
         {
             Position PosRX(Sol(0), Sol(1), Sol(2));
             ps.clear();
             int n = 0;
             for (int i = 0; i < useSat.size(); i++)
             {
+                if (!useSat[i]) continue;
+
                 double iodel(0.0);
-                if (conv < 100 && isApplyIono && useSat[i])
+                if (conv < 100 && ionoType==PRIonoCorrType::Klobuchar)
                 {
                     Position SVpos(SVP(i, 0), SVP(i, 1), SVP(i, 2));
                     double elv = PosRX.elevationGeodetic(SVpos);
                     double azm = PosRX.azimuth(SVpos);
                     double iodel = iono.getCorrection(t, PosRX, elv, azm);
                 }
-                if (!useSat[i]) continue;
+
                 double rho = RSS(SVP(i, 0) - Sol(0), SVP(i, 1) - Sol(1), SVP(i, 2) - Sol(2));
 
                 // corrected pseudorange (m)
@@ -303,13 +299,14 @@ int PRSolutionLEO::recalc(
                 n++;
             }
 
+            if (n < 3) return -1;
             PT = transpose(P);
             Cov = PT * P;
+
             try
             {
                 Cov = inverseSVD(Cov);
             }
-            //try { Cov = inverseLUD(Cov); }
             catch (SingularMatrixException& sme)
             {
                 return -2;
@@ -321,20 +318,16 @@ int PRSolutionLEO::recalc(
             // test for convergence
             conv = norm(dX);
             iter_++;
+            if (iter_ == maxIter) break;
 
-            bool b1 = maxIter < iter_;
-            bool b2 = eps < conv;
-            if (b1 || b1) break;
-
-        }
+        } while (eps < conv);
 
         calcStat(Resid, Cov);
-        if (this->sigma < 100) return 1;
-        else
-        {
-            useSat[_j] = true;
 
-        }
+        if (this->sigma < sigmaMax)
+            return 1;
+        else
+            useSat[k] = true;
     }
     return 0;
 }
