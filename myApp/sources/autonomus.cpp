@@ -260,7 +260,7 @@ void Autonomus::process()
                 vector<uchar> SNRs;
                 vector<bool> UseSat;
 
-                solverLEO.selectObservable(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs, true);
+                solverLEO.selectObservations(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs, true);
                 solverLEO.Sol = 0.0;
 
                 for (size_t i = 0; i < prnVec.size(); i++)

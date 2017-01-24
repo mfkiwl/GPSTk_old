@@ -1,7 +1,7 @@
 #ifndef AUTONOMUS
 #define AUTONOMUS
 #include"stdafx.h"
-#include"PRSolutionLEO.h"
+#include"PRSolverLEO.h"
 
 using namespace gpstk;
 typedef  unsigned char uchar;
