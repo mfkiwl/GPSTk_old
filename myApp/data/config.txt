@@ -1,14 +1,14 @@
 #generic 
 ##############################################################################
-satDataFile      = PRN_GPS          , constellation data file
-antennaDataFile  = I08.ATX
+SatellitesDataFile = PRN_GPS          , constellation data file
+AntennasDataFile   = I08.ATX
 
 #masks
 ##############################################################################
 ElMask =  5.0, deg
-SNRmask = 20, dBHz
+SNRmask = 26, dBHz
 
-#data direcories
+#data directories
 ##############################################################################
 RinesObsDir = GOCE
 EphemerisDir = EPH

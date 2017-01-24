@@ -1,13 +1,13 @@
 
 #include"stdafx.h"
-#include"PRSolutionLEO.h"
+#include"PRSolverLEO.h"
 
-double PRSolutionLEO::eps = 1e-4;
+double PRSolverLEO::eps = 1e-4;
 
-void  PRSolutionLEO::selectObservable(
+void  PRSolverLEO::selectObservations(
     const Rinex3ObsData &rod,
-    int iL1Code,
-    int iL2Code,
+    int iL1PR,
+    int iL2PR,
     int iL1SNR,
     vector<SatID> & PRNs,
     vector<double> &L1PRs,
@@ -28,7 +28,7 @@ void  PRSolutionLEO::selectObservable(
             char S1(0);
             try
             {
-                C1 = rod.getObs((*it).first, iL1Code).data;
+                C1 = rod.getObs((*it).first, iL1PR).data;
                 S1 = rod.getObs((*it).first, iL1SNR).data;
             }
             catch (...)
@@ -43,7 +43,7 @@ void  PRSolutionLEO::selectObservable(
                 double P2(0.0);
                 try
                 {
-                    P2 = rod.getObs((*it).first, iL2Code).data;
+                    P2 = rod.getObs((*it).first, iL2PR).data;
                 }
                 catch (...)
                 {
@@ -62,7 +62,7 @@ void  PRSolutionLEO::selectObservable(
     }
 }
 
-void PRSolutionLEO::prepare(
+void PRSolverLEO::prepare(
     const CommonTime &t,
     vector<SatID> &IDs,
     const vector<double> &PRs,
@@ -113,14 +113,13 @@ void PRSolutionLEO::prepare(
     }
 }
 
-int  PRSolutionLEO::ajustParameters(
+int  PRSolverLEO::solve(
     const CommonTime &t,
     const Matrix<double> &SVP,
     vector<bool> &useSat,
     Matrix<double>& Cov,
     Vector<double>& Resid,
-    IonoModelStore &iono
-)
+    IonoModelStore &iono)
 {
     int   n, N;
     size_t i;
@@ -214,7 +213,7 @@ int  PRSolutionLEO::ajustParameters(
     return 1;
 };
 
-void PRSolutionLEO::calcStat(Vector<double> resid, Matrix<double> Cov)
+void PRSolverLEO::calcStat(Vector<double> resid, Matrix<double> Cov)
 {
     RMS3D = 0, PDOP = 0;
     double variance = ps.variance();
@@ -229,14 +228,14 @@ void PRSolutionLEO::calcStat(Vector<double> resid, Matrix<double> Cov)
     RMS3D = sqrt(RMS3D);
 }
 
-string PRSolutionLEO::printSolution(const vector<bool> &useSat)
+string PRSolverLEO::printSolution(const vector<bool> &useSat)
 {
     std::ostringstream strs;
     strs << setprecision(12) << " " << Sol(0) << " " << Sol(1) << " " << Sol(2) << " " << iter << " " << useSat.size() << " " << ps.size() << " " <<setprecision(3)<< sigma << " " << RMS3D<<" "<<PDOP;
     return strs.str();
 }
 
-int PRSolutionLEO::catchSatByResid(
+int PRSolverLEO::catchSatByResid(
     const CommonTime &t,
     const Matrix<double> &SVP,
     vector<bool> &useSat,
@@ -300,6 +299,7 @@ int PRSolutionLEO::catchSatByResid(
             }
 
             if (n < 3) return -1;
+
             PT = transpose(P);
             Cov = PT * P;
 

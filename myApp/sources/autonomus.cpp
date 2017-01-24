@@ -279,7 +279,7 @@ void Autonomus::process()
                     Matrix<double> SVP(prnVec.size(), 4), Cov(4, 4);
 
                     solverLEO.prepare(rod.time, prnVec, rangeVec, SP3EphList,  UseSat, SVP);
-                    res = solverLEO.ajustParameters(rod.time, SVP, UseSat, Cov, Resid, ionoStore);
+                    res = solverLEO.solve(rod.time, SVP, UseSat, Cov, Resid, ionoStore);
                     os << res;
                 
                 }

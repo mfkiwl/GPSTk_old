@@ -1,27 +1,30 @@
-#ifndef PR_SOLUTION_LEO
-#define PR_SOLUTION_LEO
+#ifndef PR_SOLVER_LEO
+#define PR_SOLVER_LEO
 
 #include"stdafx.h"
 
 using namespace std;
 typedef unsigned char uchar;
 enum PRIonoCorrType { NONE = 0, Klobuchar, IF };
-class PRSolutionLEO: public PRSolution2
+class PRSolverLEO
 {
 public:
-    PRSolutionLEO() : PRSolution2(),
+    PRSolverLEO() :
         maskEl(0.0), maskSNR(0.0), Sol(4), maxIter(15), 
         sigmaMax(50), ionoType(IF), ps()
     {};
-	void  selectObservable(
-		const Rinex3ObsData &rod,
-		int iL1Code,
-		int iL2Code,
-		int iL1SNR,
-		vector<SatID> & PRNs,
-		vector<double> &L1PRs,
-		vector<uchar> & SNRs,
-       bool isApplyRCO
+    virtual ~PRSolverLEO()
+    {};
+
+    void  selectObservations(
+        const Rinex3ObsData &rod,
+        int iL1Code,
+        int iL2Code,
+        int iL1SNR,
+        vector<SatID> & PRNs,
+        vector<double> &L1PRs,
+        vector<uchar> & SNRs,
+        bool isApplyRCO = false
 	);
 
     void prepare(
@@ -33,7 +36,7 @@ public:
         Matrix<double> &SVP
 	);
 
-    int ajustParameters(
+    int solve(
         const CommonTime &t,
         const Matrix<double> &SVP,
         vector<bool> &useSat,
@@ -67,7 +70,7 @@ public:
 protected :
     void calcStat(Vector<double> resid, Matrix<double> Cov);
 
-    int PRSolutionLEO::catchSatByResid(
+    int PRSolverLEO::catchSatByResid(
         const CommonTime &t,
         const Matrix<double> &SVP,
         vector<bool> &useSat,
@@ -75,4 +78,4 @@ protected :
 
 };
 
-#endif // !PR_SOLUTION_LEO
+#endif // !PR_SOLVER_LEO

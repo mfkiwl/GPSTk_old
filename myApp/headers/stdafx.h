@@ -126,7 +126,7 @@
 #include"ex9.h"
 #include"autonomus.h"
 #include"auxiliary.h"
-#include"PRSolutionLEO.h"
+#include"PRSolverLEO.h"
 // TODO: reference additional headers your program requires here
 
 #endif // !STDAFX_HPP

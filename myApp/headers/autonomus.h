@@ -19,7 +19,7 @@ public :
     bool loadClocks();
 
     virtual void process();
-
+    
 protected:
      
 private:
@@ -41,7 +41,7 @@ private:
     // object to handle precise ephemeris and clocks
     SP3EphemerisStore SP3EphList;
 	//
-    PRSolutionLEO solverLEO;
+    PRSolverLEO solverLEO;
 	IonoModelStore ionoStore;
     list<string> rinesObsFiles;
 };

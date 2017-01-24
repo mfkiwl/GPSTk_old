@@ -151,7 +151,7 @@ bool ex9::pocessStataion(const string& station, const string& outName)
         // The former peculiar code is possible because each time we
         // call a 'fetchListValue' method, it takes out the first element
         // and deletes it from the given variable list.
-        Position nominalPos(xn, yn, zn);
+    Position nominalPos(xn, yn, zn);
 
 
     // Create a 'ProcessingList' object where we'll store
