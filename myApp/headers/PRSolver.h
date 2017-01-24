@@ -4,7 +4,7 @@
 #include"stdafx.h"
 
 using namespace std;
-class PRSolver:PRSolverBase
+class PRSolver: public PRSolverBase
 {
 public:
 

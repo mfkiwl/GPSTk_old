@@ -10,13 +10,17 @@ Autonomus:: Autonomus(char* arg0, char * discr )
         'c',
         "conffile",
         " [-c|--conffile]    Name of configuration file ('config.txt' by default).",
-        false)
+        false),
+    solverPR(new PRSolverLEO())
+
 {
 
     // This option may appear just once at CLI
     confFile.setMaxCount(1);
 
 }  // End of 'ex9::ex9
+
+
 
 bool Autonomus::loadConfig(char* path)
 {
@@ -72,6 +76,18 @@ bool Autonomus::loadConfig(char* path)
     confReader.setFallback2Default(true);
 
     return true;
+}
+
+void Autonomus::swichToSpaceborn()
+{
+    delete solverPR;
+    solverPR = new PRSolverLEO();
+}
+//
+void Autonomus::swichToGroundBased(TropModel & tModel)
+{
+    delete solverPR;
+    solverPR = new PRSolver(tModel);
 }
 //
 bool Autonomus::loadEphemeris()
@@ -173,15 +189,34 @@ bool  Autonomus:: loadIono()
     }
     return true;
 }
+
 void Autonomus::process()
 {
     int badSol = 0;
-    solverLEO.maskEl = confReader.fetchListValueAsDouble("ElMask");
-    solverLEO.maskSNR = confReader.fetchListValueAsInt("SNRmask");
-    solverLEO.ionoType =  (PRIonoCorrType)confReader.fetchListValueAsInt("PRionoCorrType");
+    
+    NeillTropModel NeillModel;
+    bool isSpace = confReader.fetchListValueAsBoolean("IsSpaceborneRcv");
+    
+    if (isSpace)
+        swichToSpaceborn();
+    else
+    {
+        double xapp(confReader.fetchListValueAsDouble("nominalPosition"));
+        double yapp(confReader.fetchListValueAsDouble("nominalPosition"));
+        double zapp(confReader.fetchListValueAsDouble("nominalPosition"));
+        Position apprPos(xapp, yapp, zapp);
+        int doy = confReader.fetchListValueAsInt("doy");
+        NeillModel = NeillTropModel(apprPos.getAltitude(),apprPos.getGeodeticLatitude(), doy);
+
+        swichToGroundBased(NeillModel);
+    }
+
+    solverPR->maskEl = confReader.fetchListValueAsDouble("ElMask");
+    solverPR->maskSNR = confReader.fetchListValueAsInt("SNRmask");
+    solverPR->ionoType =  (PRIonoCorrType)confReader.fetchListValueAsInt("PRionoCorrType");
      
-    cout << "mask El " << solverLEO.maskEl << endl;
-    cout << "mask SNR " <<(int) solverLEO.maskSNR << endl;
+    cout << "mask El " << solverPR->maskEl << endl;
+    cout << "mask SNR " <<(int) solverPR->maskSNR << endl;
 
     string subdir = confReader.fetchListValue("RinesObsDir");
     auxiliary::getAllFiles(subdir, rinesObsFiles);
@@ -205,6 +240,7 @@ void Autonomus::process()
             //read the header
             rin >> roh;
 
+
 #pragma region init observables indexes
 
             int indexC1 = roh.getObsIndex(L1CCodeID);
@@ -212,6 +248,7 @@ void Autonomus::process()
             try
             {
                 indexCNoL1 = roh.getObsIndex(L1CNo);
+                cout << "L1 C/No from " << L2CodeID << endl;
             }
             catch (...)
             {
@@ -234,12 +271,12 @@ void Autonomus::process()
             try
             {
                 indexP2 = roh.getObsIndex(L2CodeID);
-                cout << "L1 PRange from " << L2CodeID <<  endl;
+                cout << "L2 PRange from " << L2CodeID <<  endl;
             }
             catch (...)
             {
                 indexP2 = -1;
-                if(solverLEO.ionoType==PRIonoCorrType::IF) 
+                if(solverPR->ionoType==PRIonoCorrType::IF)
                     cout << "The observation file doesn't have L2 pseudoranges" <<  endl;
                 continue;
             }
@@ -260,12 +297,12 @@ void Autonomus::process()
                 vector<uchar> SNRs;
                 vector<bool> UseSat;
 
-                solverLEO.selectObservations(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs, true);
-                solverLEO.Sol = 0.0;
+                solverPR->selectObservations(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs, true);
+                solverPR->Sol = 0.0;
 
                 for (size_t i = 0; i < prnVec.size(); i++)
                 {
-                    if (SNRs[i] >= solverLEO.maskSNR)
+                    if (SNRs[i] >= solverPR->maskSNR)
                     {
                         UseSat.push_back(true);
                         GoodSats++;
@@ -278,16 +315,16 @@ void Autonomus::process()
                 {
                     Matrix<double> SVP(prnVec.size(), 4), Cov(4, 4);
 
-                    solverLEO.prepare(rod.time, prnVec, rangeVec, SP3EphList,  UseSat, SVP);
-                    res = solverLEO.solve(rod.time, SVP, UseSat, Cov, Resid, ionoStore);
+                    solverPR->prepare(rod.time, prnVec, rangeVec, SP3EphList,  UseSat, SVP);
+                    res = solverPR->solve(rod.time, SVP, UseSat, Cov, Resid, ionoStore);
                     os << res;
                 
                 }
                 else
-                    res = 0;
+                    res = 1;
 
-                os << solverLEO.printSolution(UseSat) << endl;
-                if (res != 1) badSol++;
+                os << solverPR->printSolution(UseSat) << endl;
+                if (res != 0) badSol++;
 
             }
             rin.close();
@@ -303,6 +340,6 @@ void Autonomus::process()
 
     }
     os.close();
-    cout << "bad Solutions " << badSol<<endl;
+    cout << "Epochs w/o solution " << badSol<<endl;
 }
 

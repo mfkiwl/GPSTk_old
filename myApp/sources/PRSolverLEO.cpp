@@ -16,7 +16,6 @@ int  PRSolverLEO::solve(
     double conv = DBL_MAX;
     do
     {
-       
         // find the number of good satellites
         for (N = 0, i = 0; i < useSat.size(); i++)
         {
@@ -99,7 +98,7 @@ int  PRSolverLEO::solve(
     if (sigma > sigmaMax)
         return catchSatByResid(t, SVP, useSat, iono);
 
-    return 1;
+    return 0;
 };
 
 int PRSolverLEO::catchSatByResid(
@@ -192,10 +191,10 @@ int PRSolverLEO::catchSatByResid(
         calcStat(Resid, Cov);
 
         if (this->sigma < sigmaMax)
-            return 1;
+            return 0;
         else
             useSat[k] = true;
     }
-    return 0;
+    return 1;
 }
 

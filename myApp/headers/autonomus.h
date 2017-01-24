@@ -12,11 +12,17 @@ class Autonomus :public BasicFramework
 
 public :
     Autonomus(char* arg0, char * discr);
-
+    virtual ~Autonomus()
+    {
+        delete solverPR;
+    }
+    
     bool loadConfig(char* path);
     bool loadEphemeris();
 	bool loadIono();
     bool loadClocks();
+    void swichToSpaceborn();
+    void swichToGroundBased(TropModel & tModel);
 
     virtual void process();
     
@@ -24,7 +30,7 @@ protected:
      
 private:
 
-	 const  char * L1CCodeID = "C1";
+	 const char * L1CCodeID = "C1";
      const char * L1PCodeID = "C1";
      const char * L2CodeID = "C2W";
      const char * L1CNo =    "S1C";
@@ -41,7 +47,7 @@ private:
     // object to handle precise ephemeris and clocks
     SP3EphemerisStore SP3EphList;
 	//
-    PRSolverLEO solverLEO;
+    PRSolverBase *solverPR;
 	IonoModelStore ionoStore;
     list<string> rinesObsFiles;
 };
