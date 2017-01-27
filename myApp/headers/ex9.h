@@ -47,18 +47,19 @@ private:
 
     // Method to print solution values
     void printSolution(ofstream& outfile,
-        const  SolverLMS& solver,
-		const  CommonTime& time0,
-        const  CommonTime& time,
-        const  ComputeDOP& cDOP,
-        bool   useNEU,
-        int    numSats,
-        double dryTropo,
-		vector<PowerSum> &stats,
-		int    precision=3
-	);
-	void printStats(ofstream& outfile, 
-		const vector<PowerSum> &statistic);
+                       const  SolverLMS& solver,
+                       const  CommonTime& time0,
+                       const  CommonTime& time,
+                       const  ComputeDOP& cDOP,
+                       bool   useNEU,
+                       int    numSats,
+                       double dryTropo,
+                       vector<PowerSum> &stats,
+                       int    precision = 3
+    ){}
+    void printStats(ofstream& outfile,
+                    const vector<PowerSum> &statistic)
+    {}
 
 
     // Method to print model values

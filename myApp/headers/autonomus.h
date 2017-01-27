@@ -24,10 +24,31 @@ public :
     void swichToSpaceborn();
     void swichToGroundBased(TropModel & tModel);
 
-    virtual void process();
+    virtual void process()
+    {};
+    void PRprocess();
+    void PPPprocess();
+    bool PPPprocess2();
     
 protected:
-     
+    
+    void printModel(ofstream& modelfile,
+                         const gnssRinex& gData,
+                         int   precision);
+
+    void printSolution(ofstream& outfile,
+                       const SolverLMS& solver,
+                       const CommonTime& time0,
+                       const CommonTime& time,
+                       const ComputeDOP& cDOP,
+                       bool  useNEU,
+                       int   numSats,
+                       double dryTropo,
+                       vector<PowerSum> &stats,
+                       int   precision);
+
+    void Autonomus::printStats(ofstream& outfile, const vector<PowerSum> &stats);
+    string genFilesDir;
 private:
 
 	 const char * L1CCodeID = "C1";
@@ -50,6 +71,8 @@ private:
     PRSolverBase *solverPR;
 	IonoModelStore ionoStore;
     list<string> rinesObsFiles;
+    map<CommonTime, Xvt> apprPos;
+
 };
 
 #endif // !1

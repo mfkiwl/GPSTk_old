@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 // Method to print solution values
-void ex9::printSolution(ofstream& outfile,
+void Autonomus::printSolution(ofstream& outfile,
 	const SolverLMS& solver,
 	const CommonTime& time0,
 	const CommonTime& time,
@@ -78,7 +78,7 @@ void ex9::printSolution(ofstream& outfile,
 
 
 
-void ex9::printStats(ofstream& outfile,
+void Autonomus::printStats(ofstream& outfile,
 	const vector<PowerSum> &stats)
 {
 	Triple Aver, Var;

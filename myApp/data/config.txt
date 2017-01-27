@@ -1,25 +1,56 @@
-#generic 
+#generic files 
 ##############################################################################
-SatellitesDataFile = PRN_GPS          , constellation data file
-AntennasDataFile   = I08.ATX
-
-#masks
-##############################################################################
-ElMask =  5.0, deg
-SNRmask = 26, dBHz
+GenericFilesDir  = GEN
+satDataFile      = PRN_GPS          
+antexFile        = I08.ATX         
+oceanLoadingFile = JUN2016.BLQ      
 
 #data directories
 ##############################################################################
-RinesObsDir = GOCE
-EphemerisDir = EPH
-RinexClockDir = CLK_30S
+#RinesObsDir     = GOCE
+RinesObsDir      = DRB1
+EphemerisDir     = EPH
+RinexClockDir    = CLK_30S
 RinexNavFilesDir = NAV
 
-#process settings
+
+#PROCESS SETTINGS
 ##############################################################################
+#masks
+##############################################################################
+ElMask =  10.0, deg
+SNRmask = 30,  dB*Hz
+
 #ionospheric correction for RP solution 
 #ionoCorrectionType==0 -> no apply iono correction
 #ionoCorrectionType==1 -> use Klobuchar model
 #ionoCorrectionType==2 -> use L3 combination 
 PRionoCorrType = 1;
+#
+IsSpaceborneRcv = FALSE
+#For ground based receiver only:
+stationName = DRB1
+nominalPosition = 2850673.7320 2199460.7640 5247212.5609 ,  position close to DRB antennas
+dayOfYear = 2
+#Antenna parameters
+offsetARP = 0.0 0.0 0.0   ,  antenna reference point offset
+antennaModel = TPSCR.G3        NONE
+usePCPatterns = TRUE
+useAzim = FALSE
+
+#
+decimationInterval = 15
+decimationTolerance = 0.1
+forwardBackwardCycles = 0
+filterCode = TRUE
+#
+
+
+
+#pole
+poleDisplacements, for May/15/2016  = 0.073290 0.289878, arcsec
+#output
+printModel = FALSE
+modelFile = ppp_model.txt
+
 

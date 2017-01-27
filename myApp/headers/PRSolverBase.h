@@ -13,12 +13,12 @@ class PRSolverBase
 public:
     PRSolverBase():
         maskEl(0.0), maskSNR(0.0), Sol(4), maxIter(15),
-        sigmaMax(50), ionoType(IF), ps()
+        sigmaMax(25), ionoType(IF), ps()
     {};
     virtual ~PRSolverBase()
     { };
 
-        void  selectObservations(
+        void  selectObservables(
             const Rinex3ObsData &rod,
             int iL1Code,
             int iL2Code,

@@ -139,9 +139,7 @@ void ex9::process()
 }  // End of 'ex9::process()'
 bool ex9::pocessStataion(const string& station, const string& outName)
 {
-
     double newSampling(confReader.getValueAsDouble("decimationInterval", station));
-
 
     // Load station nominal position
     double xn(confReader.fetchListValueAsDouble("nominalPosition", station));
@@ -157,8 +155,7 @@ bool ex9::pocessStataion(const string& station, const string& outName)
     // Create a 'ProcessingList' object where we'll store
     // the processing objects in order
     ProcessingList pList;
-
-
+    
     // This object will check that all required observables are present
     RequireObservables requireObs;
     requireObs.addRequiredType(TypeID::P2);
@@ -412,8 +409,7 @@ bool ex9::pocessStataion(const string& station, const string& outName)
     int cycles(confReader.getValueAsInt("forwardBackwardCycles", station));
 
     // Get if we want to process coordinates as white noise
-    bool isWN(confReader.getValueAsBoolean("coordinatesAsWhiteNoise",
-        station));
+    bool isWN(confReader.getValueAsBoolean("coordinatesAsWhiteNoise", station));
 
     // White noise stochastic model
     WhiteNoiseModel wnM(100.0);      // 100 m of sigma

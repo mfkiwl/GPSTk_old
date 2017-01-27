@@ -11,9 +11,9 @@ int main(int argc, char *argv[])
     cout << "Ephemeris Loading... ";
     cout << proc.loadEphemeris() << endl;
     cout << "Clocks Loading... "  ;
-    cout << proc.loadClocks() << endl;
+   // cout << proc.loadClocks() << endl;
     cout << "IonoModel Loading... ";
     cout << proc.loadIono() << endl;
 
-    proc.process();
+    proc.PPPprocess();
 }

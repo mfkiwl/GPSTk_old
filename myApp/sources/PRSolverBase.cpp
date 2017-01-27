@@ -5,7 +5,7 @@
 double PRSolverBase::eps = 1e-4;
 GPSEllipsoid PRSolverBase::ellGPS;
 
-void  PRSolverBase::selectObservations(
+void  PRSolverBase::selectObservables(
     const Rinex3ObsData &rod,
     int iL1PR,
     int iL2PR,

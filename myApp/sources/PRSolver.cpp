@@ -239,9 +239,9 @@ int PRSolver::catchSatByResid(
 
         calcStat(Resid, Cov);
         if (this->sigma < sigmaMax)
-            return 1;
+            return 0;
         else
             useSat[k] = true;
     }
-    return 0;
+    return 1;
 }
