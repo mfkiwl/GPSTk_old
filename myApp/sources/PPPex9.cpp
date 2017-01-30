@@ -1,45 +1,6 @@
 #include"stdafx.h"
 #include"actions.h"
 
-int Actions::runEx9(int argc, char *argv[])
-{
-
-
-    try{
-
-        ex9 program(argv[0]);
-
-        // We are disabling 'pretty print' feature to keep
-        // our description format
-        if (!program.initialize(argc, argv, false)){
-            return 0;
-        }
-
-        if (!program.run()){
-            return 1;
-        }
-
-        return 0;
-
-    }
-    catch (Exception& e){
-
-        cerr << "Problem: " << e << endl;
-
-        return 1;
-
-    }
-    catch (...){
-
-        cerr << "Unknown error." << endl;
-
-        return 1;
-
-    }
-
-    return 0;
-}
-
 int Actions::CalcPPP( char * arg0)
 {
 

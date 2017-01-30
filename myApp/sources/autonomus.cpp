@@ -80,6 +80,8 @@ bool Autonomus::loadConfig(char* path)
     string subdir = confReader.fetchListValue("GenericFilesDir");
     genFilesDir = s_dir + "\\" + subdir + "\\";
 
+    subdir = confReader.fetchListValue("RinesObsDir");
+    auxiliary::getAllFiles(subdir, rinesObsFiles);
        // If a given variable is not found in the provided section, then
        // 'confReader' will look for it in the 'DEFAULT' section.
     confReader.setFallback2Default(true);
@@ -228,8 +230,6 @@ void Autonomus::PRprocess()
     cout << "mask El " << solverPR->maskEl << endl;
     cout << "mask SNR " <<(int) solverPR->maskSNR << endl;
 
-    string subdir = confReader.fetchListValue("RinesObsDir");
-    auxiliary::getAllFiles(subdir, rinesObsFiles);
     ofstream os;
     os.open("outputPR.txt");
     for (auto obsFile : rinesObsFiles)
@@ -679,6 +679,12 @@ bool Autonomus:: PPPprocess2()
     }
     #pragma endregion
 
+
+    //statistics for coorinates and tropo delay
+    vector<PowerSum> stats(4);
+    CommonTime time0;
+    bool b = true;
+
     //// *** Now comes the REAL forwards processing part *** ////
     for (auto obsFile : rinesObsFiles)
     {
@@ -733,25 +739,29 @@ bool Autonomus:: PPPprocess2()
                 return false;;
             }
 
-
-
-
             // Check what type of solver we are using
             if (cycles < 1)
             {
 
+                CommonTime time(gRin.header.epoch);
+                if (b)
+                {
+                    time0 = time;
+
+                    b = false;
+                }
                 // This is a 'forwards-only' filter. Let's print to output
                 // file the results of this epoch
-                //           printSolution(outfile,
-                //               pppSolver,
-                //time0,
-                //               time,
-                //               cDOP,
-                //               isNEU,
-                //               gRin.numSats(),
-                //               drytropo,
-                //stats,
-                //               precision);
+                           printSolution(outfile,
+                               pppSolver,
+                time0,
+                               time,
+                               cDOP,
+                               isNEU,
+                               gRin.numSats(),
+                               drytropo,
+                stats,
+                               precision);
 
             }  // End of 'if ( cycles < 1 )'
 
@@ -824,22 +834,12 @@ bool Autonomus:: PPPprocess2()
 
     }  // End of 'try-catch' block
 
-       //statistics for coorinates and tropo delay
-    vector<PowerSum> stats(4);
-    CommonTime time0;
-    bool b = true;
+   
     // Reprocess is over. Let's finish with the last processing		
     // Loop over all data epochs, again, and print results
     while (fbpppSolver.LastProcess(gRin))
     {
-
         CommonTime time(gRin.header.epoch);
-        if (b)
-        {
-            time0 = time;
-
-            b = false;
-        }
         printSolution(outfile,
                       fbpppSolver,
                       time0,

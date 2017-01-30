@@ -1,7 +1,7 @@
 #include "stdafx.h"
-
+#include "ex9.h"
 // Method to print solution values
-void Autonomus::printSolution(ofstream& outfile,
+void ex9::printSolution(ofstream& outfile,
 	const SolverLMS& solver,
 	const CommonTime& time0,
 	const CommonTime& time,
@@ -78,7 +78,7 @@ void Autonomus::printSolution(ofstream& outfile,
 
 
 
-void Autonomus::printStats(ofstream& outfile,
+void ex9::printStats(ofstream& outfile,
 	const vector<PowerSum> &stats)
 {
 	Triple Aver, Var;
@@ -97,7 +97,7 @@ void Autonomus::printStats(ofstream& outfile,
 }
 
 // Method to print model values
-void Autonomus::printModel(ofstream& modelfile,
+void ex9::printModel(ofstream& modelfile,
 	const gnssRinex& gData,
 	int   precision)
 {

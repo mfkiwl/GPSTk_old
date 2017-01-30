@@ -3,6 +3,8 @@
 
 #include"stdafx.h"
 
+using namespace gpstk;
+using namespace std;
 class ex9 : public BasicFramework
 {
 public:
@@ -10,6 +12,7 @@ public:
     // Constructor declaration
     ex9(char* arg0);
 
+    static int runEx9(int argc, char *argv[]);
 
 protected:
 
@@ -56,10 +59,10 @@ private:
                        double dryTropo,
                        vector<PowerSum> &stats,
                        int    precision = 3
-    ){}
+    );
     void printStats(ofstream& outfile,
-                    const vector<PowerSum> &statistic)
-    {}
+                    const vector<PowerSum> &statistic);
+    
 
 
     // Method to print model values
