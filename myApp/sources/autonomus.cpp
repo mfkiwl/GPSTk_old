@@ -754,13 +754,13 @@ bool Autonomus:: PPPprocess2()
                 // file the results of this epoch
                            printSolution(outfile,
                                pppSolver,
-                time0,
+                               time0,
                                time,
                                cDOP,
                                isNEU,
                                gRin.numSats(),
                                drytropo,
-                stats,
+                               stats,
                                precision);
 
             }  // End of 'if ( cycles < 1 )'
@@ -770,7 +770,7 @@ bool Autonomus:: PPPprocess2()
                // Ask if we are going to print the model
             if (printmodel)
             {
-                printModel(modelfile, gRin,4);
+                printModel(modelfile, gRin, 4);
             }
         }  // End of 'while(rin >> gRin)'
 
@@ -782,7 +782,7 @@ bool Autonomus:: PPPprocess2()
        // Close current Rinex observation stream
 
 
-
+    cout << "-1-" << endl;
     // If we printed the model, we must close the file
     if (printmodel)
     {
@@ -792,7 +792,7 @@ bool Autonomus:: PPPprocess2()
 
     //// *** Forwards processing part is over *** ////
 
-
+    cout << "-2-" << endl;
     // Now decide what to do: If solver was a 'forwards-only' version,
     // then we are done and should continue with next station.
     if (cycles < 1)
@@ -805,12 +805,12 @@ bool Autonomus:: PPPprocess2()
         cout << "Processing finished for station: '" << stationName << endl;
 
         // Go process next station
-        return true;;
+        return true;
 
     }
 
     //// *** If we got here, it is a 'forwards-backwards' solver *** ////
-
+    cout << "-3-" << endl;
     int i_c = 0;
     // Now, let's do 'forwards-backwards' cycles
     try
@@ -834,12 +834,15 @@ bool Autonomus:: PPPprocess2()
 
     }  // End of 'try-catch' block
 
-   
+    cout << "-4-" << endl;
     // Reprocess is over. Let's finish with the last processing		
     // Loop over all data epochs, again, and print results
     while (fbpppSolver.LastProcess(gRin))
     {
+        cout << "-4a-" << endl;
         CommonTime time(gRin.header.epoch);
+        cout << "-4b-" << endl;
+
         printSolution(outfile,
                       fbpppSolver,
                       time0,
@@ -851,9 +854,10 @@ bool Autonomus:: PPPprocess2()
                       stats,
                       precision
         );
+        cout << "-4c-" << endl;
 
     }  // End of 'while( fbpppSolver.LastProcess(gRin) )'
-
+    cout << "-5-" << endl;
        //print statistic
     printStats(outfile, stats);
 
@@ -862,45 +866,4 @@ bool Autonomus:: PPPprocess2()
     // Close output file for this station
     outfile.close();
 
-}
-// Method to print model values
-void Autonomus::printModel(ofstream& modelfile,
-                           const gnssRinex& gData,
-                           int   precision)
-{
-    // Prepare for printing
-    modelfile << fixed << setprecision(precision);
-
-    // Get epoch out of GDS
-    CommonTime time(gData.header.epoch);
-
-    // Iterate through the GNSS Data Structure
-    for (satTypeValueMap::const_iterator it = gData.body.begin();
-         it != gData.body.end();
-         it++)
-    {
-
-        // Print epoch
-        modelfile << static_cast<YDSTime>(time).year << "  ";    // Year          #1
-        modelfile << static_cast<YDSTime>(time).doy << "  ";    // DayOfYear      #2
-        modelfile << static_cast<YDSTime>(time).sod << "  ";    // SecondsOfDay   #3
-
-                                                                // Print satellite information (Satellite system and ID number)
-        modelfile << (*it).first << " ";             // System         #4
-                                                     // ID number      #5
-
-                                                     // Print model values
-        for (typeValueMap::const_iterator itObs = (*it).second.begin();
-             itObs != (*it).second.end();
-             itObs++)
-        {
-            // Print type names and values
-            modelfile << (*itObs).first << " ";
-            modelfile << (*itObs).second << " ";
-
-        }  // End of 'for( typeValueMap::const_iterator itObs = ...'
-
-        modelfile << endl;
-
-    }
 }
