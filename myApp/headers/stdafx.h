@@ -38,8 +38,6 @@
 // Class for storing "broadcast-type" ephemerides
 #include "GPSEphemerisStore.hpp"
 
-// Class for handling RAIM
-#include "PRSolution2.hpp"
 
 // Class defining GPS system constants
 #include "GNSSconstants.hpp"
