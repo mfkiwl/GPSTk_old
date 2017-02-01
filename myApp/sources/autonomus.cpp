@@ -2,6 +2,10 @@
 #include<list>
 #include <direct.h>
 #include<windows.h>
+#include<regex>
+
+///typedef match_result<const char *> cmatch;
+
 Autonomus:: Autonomus(char* arg0, char * discr )
     :
     BasicFramework(arg0,
@@ -169,10 +173,45 @@ bool  Autonomus:: loadIono()
 
             rNavFile.open(file.c_str(), std::ios::in);
             rNavFile >> rNavHeader;
-
-            long week = rNavHeader.mapTimeCorr["GPUT"].refWeek;
-            GPSWeekSecond gpsws = GPSWeekSecond(week,0 );
-            CommonTime refTime = gpsws.convertToCommonTime();
+#pragma region try get the date
+			int doy = -1, yr = -1;
+			CommonTime refTime = CommonTime::BEGINNING_OF_TIME;
+			if (rNavHeader.fileAgency == "AIUB")
+			{
+				for (auto it : rNavHeader.commentList)
+				{
+					std::tr1::cmatch res;
+					std::tr1::regex rxDoY("DAY [0-9]{3,3}"), rxY(" [0-9]{4,4}");
+					bool b = std::tr1::regex_search(it.c_str(), res, rxDoY);
+					if (b)
+					{
+						string sDay = res[0];
+						sDay = sDay.substr(sDay.size() - 4, 4);
+						doy = stoi(sDay);
+					}
+					if (std::tr1::regex_search(it.c_str(), res, rxY))
+					{
+						string sDay = res[0];
+						sDay = sDay.substr(sDay.size() - 5, 5);
+						yr = stoi(sDay);
+					}
+					if (doy > 0 && yr > 0)
+					{
+						refTime = YDSTime(yr, doy);
+						break;
+					}
+				}
+			}
+			else
+			{
+				long week = rNavHeader.mapTimeCorr["GPUT"].refWeek;
+				if (week > 0)
+				{
+					GPSWeekSecond gpsws = GPSWeekSecond(week, 0);
+					refTime = gpsws.convertToCommonTime();
+				}
+			}
+#pragma endregion
 
             if (rNavHeader.valid & Rinex3NavHeader::validIonoCorrGPS)
             {
@@ -201,7 +240,7 @@ bool  Autonomus:: loadIono()
     }
     return true;
 }
-
+//
 void Autonomus::PRprocess()
 {
     int badSol = 0;
@@ -361,8 +400,8 @@ void Autonomus::PRprocess()
 //
 void Autonomus::PPPprocess()
 {
-    //PRprocess();
-    PPPprocess2();
+    PRprocess();
+    //PPPprocess2();
 }
 
 bool Autonomus:: PPPprocess2()
@@ -781,8 +820,6 @@ bool Autonomus:: PPPprocess2()
        //printStats(outfile, stats);
        // Close current Rinex observation stream
 
-
-    cout << "-1-" << endl;
     // If we printed the model, we must close the file
     if (printmodel)
     {
@@ -792,7 +829,6 @@ bool Autonomus:: PPPprocess2()
 
     //// *** Forwards processing part is over *** ////
 
-    cout << "-2-" << endl;
     // Now decide what to do: If solver was a 'forwards-only' version,
     // then we are done and should continue with next station.
     if (cycles < 1)
@@ -810,7 +846,6 @@ bool Autonomus:: PPPprocess2()
     }
 
     //// *** If we got here, it is a 'forwards-backwards' solver *** ////
-    cout << "-3-" << endl;
     int i_c = 0;
     // Now, let's do 'forwards-backwards' cycles
     try
@@ -834,14 +869,18 @@ bool Autonomus:: PPPprocess2()
 
     }  // End of 'try-catch' block
 
-    cout << "-4-" << endl;
     // Reprocess is over. Let's finish with the last processing		
     // Loop over all data epochs, again, and print results
     while (fbpppSolver.LastProcess(gRin))
     {
-        cout << "-4a-" << endl;
+
         CommonTime time(gRin.header.epoch);
-        cout << "-4b-" << endl;
+		if (b)
+		{
+			time0 = time;
+
+			b = false;
+		}
 
         printSolution(outfile,
                       fbpppSolver,

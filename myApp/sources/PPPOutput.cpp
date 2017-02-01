@@ -55,14 +55,13 @@ void Autonomus::printSolution(ofstream& outfile,
 	//
 	outfile  << x << "  " << y << "  " << z << "  " << wetMap << "  ";
 	outfile << sqrt(varX+ varY+ varZ)<< "  ";
-
+	
 	outfile << numSats << endl;    // Number of satellites - #12
 
     //time of convergence by default 7200 seconds;
 	double tConv(5400.0);
 
     double dt = time - time0;
-  
 	if (dt > tConv)
 	{
 		stats[0].add(x);
