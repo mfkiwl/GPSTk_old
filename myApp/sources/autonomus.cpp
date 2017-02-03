@@ -173,6 +173,7 @@ bool  Autonomus:: loadIono()
 
             rNavFile.open(file.c_str(), std::ios::in);
             rNavFile >> rNavHeader;
+
 #pragma region try get the date
 			int doy = -1, yr = -1;
 			CommonTime refTime = CommonTime::BEGINNING_OF_TIME;
@@ -181,7 +182,7 @@ bool  Autonomus:: loadIono()
 				for (auto it : rNavHeader.commentList)
 				{
 					std::tr1::cmatch res;
-					std::tr1::regex rxDoY("DAY [0-9]{3,3}"), rxY(" [0-9]{4,4}");
+					std::tr1::regex rxDoY("DAY [0-9]{3}"), rxY(" [0-9]{4}");
 					bool b = std::tr1::regex_search(it.c_str(), res, rxDoY);
 					if (b)
 					{
@@ -197,7 +198,7 @@ bool  Autonomus:: loadIono()
 					}
 					if (doy > 0 && yr > 0)
 					{
-						refTime = YDSTime(yr, doy);
+						refTime = YDSTime(yr, doy,0,TimeSystem::GPS);
 						break;
 					}
 				}
@@ -241,13 +242,9 @@ bool  Autonomus:: loadIono()
     return true;
 }
 //
-void Autonomus::PRprocess()
+void  Autonomus:: initProcess()
 {
-    int badSol = 0;
-    apprPos.clear();
-    NeillTropModel NeillModel;
-    bool isSpace = confReader.fetchListValueAsBoolean("IsSpaceborneRcv");
-    
+    isSpace = confReader.fetchListValueAsBoolean("IsSpaceborneRcv");
     if (isSpace)
         swichToSpaceborn();
     else
@@ -255,26 +252,39 @@ void Autonomus::PRprocess()
         double xapp(confReader.fetchListValueAsDouble("nominalPosition"));
         double yapp(confReader.fetchListValueAsDouble("nominalPosition"));
         double zapp(confReader.fetchListValueAsDouble("nominalPosition"));
-        Position apprPos(xapp, yapp, zapp);
-        int doy = confReader.fetchListValueAsInt("doy");
-        NeillModel = NeillTropModel(apprPos.getAltitude(),apprPos.getGeodeticLatitude(), doy);
+        nominalPos = Position(xapp, yapp, zapp);
+        DoY = confReader.fetchListValueAsInt("dayOfYear");
+    }
 
+    maskEl = confReader.fetchListValueAsDouble("ElMask");
+    maskSNR = confReader.fetchListValueAsInt("SNRmask");
+
+    cout << "mask El " << maskEl << endl;
+    cout << "mask SNR " << (int)maskSNR << endl;
+}
+//
+void Autonomus::PRprocess()
+{
+    //
+    NeillTropModel  NeillModel;
+    if (!isSpace)
+    {
+        NeillModel = NeillTropModel(nominalPos.getAltitude(), nominalPos.getGeodeticLatitude(), DoY);
         swichToGroundBased(NeillModel);
     }
 
-    solverPR->maskEl = confReader.fetchListValueAsDouble("ElMask");
-    solverPR->maskSNR = confReader.fetchListValueAsInt("SNRmask");
+    int badSol = 0;
+    apprPos.clear();
+
+    solverPR->maskEl = maskEl;
+    solverPR->maskSNR = maskSNR;
     solverPR->ionoType =  (PRIonoCorrType)confReader.fetchListValueAsInt("PRionoCorrType");
-     
-    cout << "mask El " << solverPR->maskEl << endl;
-    cout << "mask SNR " <<(int) solverPR->maskSNR << endl;
 
     ofstream os;
     os.open("outputPR.txt");
     for (auto obsFile : rinesObsFiles)
     {
         cout << obsFile << endl;
-
         try {
 
             //Input observation file stream
@@ -362,12 +372,10 @@ void Autonomus::PRprocess()
                 if (GoodSats > 4)
                 {
                     Matrix<double> SVP(prnVec.size(), 4), Cov(4, 4);
-
                     solverPR->prepare(rod.time, prnVec, rangeVec, SP3EphList,  UseSat, SVP);
                     res = solverPR->solve(rod.time, SVP, UseSat, Cov, Resid, ionoStore);
                     os << res;
-                
-                }
+               }
                 else
                     res = 1;
 
@@ -383,7 +391,6 @@ void Autonomus::PRprocess()
                 {
                     badSol++;
                 } 
-
             }
             rin.close();
         }
@@ -400,24 +407,14 @@ void Autonomus::PRprocess()
 //
 void Autonomus::PPPprocess()
 {
+    initProcess();
     PRprocess();
-    //PPPprocess2();
+   // PPPprocess2();
 }
 
 bool Autonomus:: PPPprocess2()
 {
-
     string stationName = confReader.fetchListValue("stationName");
-    // Load station nominal position
-    double xn(confReader.fetchListValueAsDouble("nominalPosition"));
-    double yn(confReader.fetchListValueAsDouble("nominalPosition"));
-    double zn(confReader.fetchListValueAsDouble("nominalPosition"));
-
-    // The former peculiar code is possible because each time we
-    // call a 'fetchListValue' method, it takes out the first element
-    // and deletes it from the given variable list.
-    Position nominalPos(xn, yn, zn);
-
 
     // Create a 'ProcessingList' object where we'll store
     // the processing objects in order
@@ -464,8 +461,8 @@ bool Autonomus:: PPPprocess2()
     // Object to compute linear combinations for cycle slip detection
     ComputeLinear linear1;
 
-        linear1.addLinear(comb.pdeltaCombination);
-        linear1.addLinear(comb.mwubbenaCombination);
+    linear1.addLinear(comb.pdeltaCombination);
+    linear1.addLinear(comb.mwubbenaCombination);
     
     linear1.addLinear(comb.ldeltaCombination);
     linear1.addLinear(comb.liCombination);
@@ -494,15 +491,13 @@ bool Autonomus:: PPPprocess2()
     pList.push_back(decimateData);       // Add to processing list
 
                                          // Declare a basic modeler
+    //BasicModel basic(Position(0.0, 0.0, 0.0), SP3EphList);
     BasicModel basic(nominalPos, SP3EphList);
-
     // Set the minimum elevation
-    basic.setMinElev(confReader.getValueAsDouble("ElMask"));
-
-
+    basic.setMinElev(maskEl);
+    
     basic.setDefaultObservable(TypeID::P1);
-
-
+    
     // Add to processing list
     pList.push_back(basic);
 
@@ -513,6 +508,7 @@ bool Autonomus:: PPPprocess2()
 
                                        // Object to compute gravitational delay effects
     GravitationalDelay grDelay(nominalPos);
+    
     pList.push_back(grDelay);       // Add to processing list
 
 
@@ -540,7 +536,7 @@ bool Autonomus:: PPPprocess2()
  
     // Object to compute satellite antenna phase center effect
     ComputeSatPCenter svPcenter(nominalPos);
-
+    
    // Feed 'ComputeSatPCenter' object with 'AntexReader' object
    svPcenter.setAntexReader(antexReader);
     
@@ -562,20 +558,15 @@ bool Autonomus:: PPPprocess2()
         corr.setUseAzimuth(confReader.getValueAsBoolean("useAzim"));
     }
    
+    pList.push_back(corr);
 
-    pList.push_back(corr);       // Add to processing list
-
-                                 // Object to compute wind-up effect
-    ComputeWindUp windup(SP3EphList,
-                         nominalPos,
-                         genFilesDir +confReader.getValue("satDataFile"));
+    // Object to compute wind-up effect
+    ComputeWindUp windup(SP3EphList, nominalPos, genFilesDir +confReader.getValue("satDataFile"));
     pList.push_back(windup);       // Add to processing list
 
 
                                    // Declare a NeillTropModel object, setting its parameters
-    NeillTropModel neillTM(nominalPos.getAltitude(),
-                           nominalPos.getGeodeticLatitude(),
-                           confReader.getValueAsInt("dayOfYear"));
+    NeillTropModel neillTM(nominalPos.getAltitude(), nominalPos.getGeodeticLatitude(), DoY);
 
     // We will need this value later for printing
     double drytropo(neillTM.dry_zenith_delay());
@@ -584,14 +575,15 @@ bool Autonomus:: PPPprocess2()
     ComputeTropModel computeTropo(neillTM);
     pList.push_back(computeTropo);       // Add to processing list
 
-                                         // Object to compute ionosphere-free combinations to be used
-                                         // as observables in the PPP processing
+    // Object to compute ionosphere-free combinations to be used
+    // as observables in the PPP processing
     ComputeLinear linear2;
     linear2.addLinear(comb.pcCombination);
     linear2.addLinear(comb.lcCombination);
-    pList.push_back(linear2);       // Add to processing list
-
-                                    // Declare a simple filter object to screen PC
+    pList.push_back(linear2);      
+    
+    // Add to processing list
+    // Declare a simple filter object to screen PC
     SimpleFilter pcFilter;
     pcFilter.setFilteredType(TypeID::PC);
 
@@ -612,21 +604,22 @@ bool Autonomus:: PPPprocess2()
     pList.push_back(phaseAlign);       // Add to processing list
 
 
-                                       // Object to compute prefit-residuals
+    // Object to compute prefit-residuals
     ComputeLinear linear3(comb.pcPrefit);
     linear3.addLinear(comb.lcPrefit);
     pList.push_back(linear3);       // Add to processing list
 
-                                    // Declare a base-changing object: From ECEF to North-East-Up (NEU)
+    // Declare a base-changing object: From ECEF to North-East-Up (NEU)
     XYZ2NEU baseChange(nominalPos);
+    
     // We always need both ECEF and NEU data for 'ComputeDOP', so add this
     pList.push_back(baseChange);
 
     // Object to compute DOP values
     ComputeDOP cDOP;
-    pList.push_back(cDOP);       // Add to processing list
+    pList.push_back(cDOP);
 
-                                 // Get if we want results in ECEF or NEU reference system
+    // Get if we want results in ECEF or NEU reference system
     bool isNEU(false);
 
     // Declare solver objects
@@ -674,7 +667,6 @@ bool Autonomus:: PPPprocess2()
 
     }  // End of 'if ( cycles > 0 )'
 
-
     // Object to compute tidal effects
     #pragma region Tides
     SolidTides solid;
@@ -718,7 +710,6 @@ bool Autonomus:: PPPprocess2()
     }
     #pragma endregion
 
-
     //statistics for coorinates and tropo delay
     vector<PowerSum> stats(4);
     CommonTime time0;
@@ -745,6 +736,12 @@ bool Autonomus:: PPPprocess2()
         {
             // Store current epoch
             CommonTime time(gRin.header.epoch);
+            nominalPos = apprPos[time];
+
+            basic.rxPos = nominalPos;
+            grDelay.setNominalPosition(nominalPos);
+            svPcenter.setNominalPosition(nominalPos);
+            baseChange = XYZ2NEU(nominalPos);
 
             // Compute solid, oceanic and pole tides effects at this epoch
             Triple tides(solid.getSolidTide(time, nominalPos) + ocean.getOceanLoading(stationName, time) + pole.getPoleTide(time, nominalPos));
@@ -755,9 +752,30 @@ bool Autonomus:: PPPprocess2()
 
             try
             {
+                gRin >> requireObs
+                    >> pObsFilter
+                    >> linear1
+                    >> markCSLI2
+                    >> markCSMW
+                    >> markArc
+                    >> decimateData
+                    >> basic
+                    >> eclipsedSV
+                    >> grDelay
+                    >> svPcenter
+                    >> corr
+                    >> windup
+                    >> computeTropo
+                    >> linear2
+                    >> pcFilter
+                    >> phaseAlign
+                    >> linear3
+                    >> baseChange
+                    >> cDOP
+                    >> fbpppSolver;
                 // Let's process data. Thanks to 'ProcessingList' this is
                 // very simple and compact: Just one line of code!!!.
-                gRin >> pList;
+               // gRin >> pList;
 
             }
             catch (DecimateEpoch& d)
@@ -800,7 +818,8 @@ bool Autonomus:: PPPprocess2()
                                gRin.numSats(),
                                drytropo,
                                stats,
-                               precision);
+                               precision,
+                               nominalPos);
 
             }  // End of 'if ( cycles < 1 )'
 
@@ -842,7 +861,6 @@ bool Autonomus:: PPPprocess2()
 
         // Go process next station
         return true;
-
     }
 
     //// *** If we got here, it is a 'forwards-backwards' solver *** ////
@@ -852,11 +870,9 @@ bool Autonomus:: PPPprocess2()
     {
         cout << "cycle # " << ++i_c << endl;
         fbpppSolver.ReProcess(cycles);
-
     }
     catch (Exception& e)
     {
-
         // If problems arose, issue an message and skip receiver
         cerr << "Exception at reprocessing phase: " << e << endl;
         cerr << "Skipping receiver '" << stationName << "'." << endl;
@@ -878,10 +894,9 @@ bool Autonomus:: PPPprocess2()
 		if (b)
 		{
 			time0 = time;
-
 			b = false;
 		}
-
+        nominalPos = apprPos[time];
         printSolution(outfile,
                       fbpppSolver,
                       time0,
@@ -891,12 +906,12 @@ bool Autonomus:: PPPprocess2()
                       gRin.numSats(),
                       drytropo,
                       stats,
-                      precision
+                      precision,
+                      nominalPos
         );
-        cout << "-4c-" << endl;
 
     }  // End of 'while( fbpppSolver.LastProcess(gRin) )'
-    cout << "-5-" << endl;
+
        //print statistic
     printStats(outfile, stats);
 

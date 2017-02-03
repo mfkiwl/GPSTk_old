@@ -10,7 +10,8 @@ void Autonomus::printSolution(ofstream& outfile,
 	int   numSats,
 	double dryTropo,
 	vector<PowerSum> &stats,
-	int   precision)
+	int   precision,
+    const Position &nomXYZ)
 {
 
 	// Prepare for printing
@@ -44,9 +45,9 @@ void Autonomus::printSolution(ofstream& outfile,
 	}
 	else {
 
-		x = solver.getSolution(TypeID::dx);         // dx    - #4
-		y = solver.getSolution(TypeID::dy);         // dy    - #5
-		z = solver.getSolution(TypeID::dz);         // dz    - #6
+		x = nomXYZ.X() + solver.getSolution(TypeID::dx);    // dx    - #4
+		y = nomXYZ.Y() + solver.getSolution(TypeID::dy);    // dy    - #5
+		z = nomXYZ.Z() + solver.getSolution(TypeID::dz);    // dz    - #6
         
 		varX = solver.getVariance(TypeID::dx);     // Cov dx    - #8
 		varY = solver.getVariance(TypeID::dy);     // Cov dy    - #9

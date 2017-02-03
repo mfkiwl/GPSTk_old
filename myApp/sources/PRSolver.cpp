@@ -64,7 +64,7 @@ int PRSolver::solve(
                 if (ionoType == PRIonoCorrType::Klobuchar)
                 {
                     double azm = PosRX.azimuth(SVpos);
-                    double iodel = iono.getCorrection(t, PosRX, elv, azm);
+                    ioDel = iono.getCorrection(t, PosRX, elv, azm);
                 }
 
                 double height = PosRX.getHeight();
@@ -188,14 +188,14 @@ int PRSolver::catchSatByResid(
                     if (ionoType == PRIonoCorrType::Klobuchar)
                     {
                         double azm = PosRX.azimuth(SVpos);
-                        double iodel = iono.getCorrection(t, PosRX, elv, azm);
+                        ioDel = iono.getCorrection(t, PosRX, elv, azm);
                     }
 
                     double height = PosRX.getHeight();
                     if (elv > 0.0 || height < 10000.0 || height > -1000)
                         tropoDel = tropo->correction(PosRX, SVpos, t);
-
                 }
+
                 // geometric range
                 rho = RSS(svxyz[0] - Sol(0), svxyz[1] - Sol(1), svxyz[2] - Sol(2));
 

@@ -29,9 +29,9 @@ public :
     void PRprocess();
     void PPPprocess();
     bool PPPprocess2();
-    
+    void initProcess();
 protected:
-    
+   
     void printModel(ofstream& modelfile,
                          const gnssRinex& gData,
                          int   precision);
@@ -45,22 +45,27 @@ protected:
                        int   numSats,
                        double dryTropo,
                        vector<PowerSum> &stats,
-                       int   precision);
+                       int   precision,
+                       const Position &nomXYZ);
 
     void Autonomus::printStats(ofstream& outfile, const vector<PowerSum> &stats);
+ 
+    bool isSpace = false;
     string genFilesDir;
-private:
 
+    uchar maskSNR;
+    double maskEl;
+     
 	 const char * L1CCodeID = "C1";
      const char * L1PCodeID = "C1";
      const char * L2CodeID = "C2W";
      const char * L1CNo =    "S1C";
-
+    //
+     int DoY = 0;
+    //
+     Position nominalPos;
     // This field represents an option at command line interface (CLI)
     CommandOptionWithArg confFile;
-
-    // If you want to share objects and variables among methods, you'd
-    // better declare them here
 
     // Configuration file reader
     ConfDataReader confReader;
