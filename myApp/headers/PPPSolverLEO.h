@@ -359,28 +359,6 @@ public:
     virtual PPPSolverLEO& setCoordinatesModel(StochasticModel* pModel);
 
 
-    /// Get wet troposphere stochastic model pointer
-    virtual StochasticModel* getTroposphereModel(void) const
-    {
-        return pTropoStoModel;
-    };
-
-
-    /** Set zenital wet troposphere stochastic model
-    *
-    * @param pModel      Pointer to StochasticModel associated with
-    *                    zenital wet troposphere.
-    *
-    * \warning Be aware that some stochastic models store their internal
-    * state (for instance, 'RandomWalkModel' and 'PhaseAmbiguityModel').
-    * If that is your case, you MUST NOT use the SAME model in DIFFERENT
-    * solver objects.
-    */
-    virtual PPPSolverLEO& setTroposphereModel(StochasticModel* pModel)
-    {
-        pTropoStoModel = pModel; return (*this);
-    };
-
 
     /// Get receiver clock stochastic model pointer
     virtual StochasticModel* getReceiverClockModel(void) const
@@ -520,12 +498,7 @@ private:
 
     /// Pointer to stochastic model for dz (or dH) coordinate
     StochasticModel* pCoordZStoModel;
-
-
-    /// Pointer to stochastic model for troposphere
-    StochasticModel* pTropoStoModel;
-
-
+    
     /// Pointer to stochastic model for receiver clock
     StochasticModel* pClockStoModel;
 
@@ -585,8 +558,7 @@ private:
 
     /// Initializing method.
     void Init(void);
-
-
+    
     /// Constant stochastic model
     StochasticModel constantModel;
 

@@ -3,265 +3,8 @@
 #include <direct.h>
 #include<windows.h>
 #include<regex>
-
-///typedef match_result<const char *> cmatch;
-
-Autonomus:: Autonomus(char* arg0, char * discr )
-    :
-    BasicFramework(arg0,
-        discr),
-    // Option initialization. "true" means a mandatory option
-    confFile(CommandOption::stdType,
-        'c',
-        "conffile",
-        " [-c|--conffile]    Name of configuration file ('config.txt' by default).",
-        false),
-    solverPR(new PRSolverLEO())
-
-{
-
-    // This option may appear just once at CLI
-    confFile.setMaxCount(1);
-
-}  // End of 'ex9::ex9
-
-
-
-bool Autonomus::loadConfig(char* path)
-{
-    // Check if the user provided a configuration file name
-    if (confFile.getCount() > 0) {
-
-        // Enable exceptions
-        confReader.exceptions(ios::failbit);
-
-        try {
-
-            // Try to open the provided configuration file
-            confReader.open(path);
-
-        }
-        catch (...) {
-
-            cerr << "Problem opening file "
-                << confFile.getValue()[0]
-                << endl;
-            cerr << "Maybe it doesn't exist or you don't have proper "
-                << "read permissions." << endl;
-
-            exit(-1);
-
-        }  // End of 'try-catch' block
-
-    }
-    else {
-
-        try {
-            // Try to open default configuration file
-            confReader.open("config.txt");
-        }
-        catch (...) {
-
-            cerr << "Problem opening default configuration file 'pppconf_my.txt'"
-                << endl;
-            cerr << "Maybe it doesn't exist or you don't have proper read "
-                << "permissions. Try providing a configuration file with "
-                << "option '-c'."
-                << endl;
-
-            exit(-1);
-
-        }  // End of 'try-catch' block
-
-    }  // End of 'if ( confFile.getCount() > 0 )'
-
-
-       //get application dir
-    char current_work_dir[_MAX_FNAME];
-    _getcwd(current_work_dir, sizeof(current_work_dir));
-    string s_dir(current_work_dir);
-    //set generic files direcory 
-    string subdir = confReader.fetchListValue("GenericFilesDir");
-    genFilesDir = s_dir + "\\" + subdir + "\\";
-
-    subdir = confReader.fetchListValue("RinesObsDir");
-    auxiliary::getAllFiles(subdir, rinesObsFiles);
-       // If a given variable is not found in the provided section, then
-       // 'confReader' will look for it in the 'DEFAULT' section.
-    confReader.setFallback2Default(true);
-
-    return true;
-}
-
-void Autonomus::swichToSpaceborn()
-{
-    delete solverPR;
-    solverPR = new PRSolverLEO();
-}
-//
-void Autonomus::swichToGroundBased(TropModel & tModel)
-{
-    delete solverPR;
-    solverPR = new PRSolver(tModel);
-}
-//
-bool Autonomus::loadEphemeris()
-{
-    // Set flags to reject satellites with bad or absent positional
-    // values or clocks
-    SP3EphList.clear();
-    SP3EphList.rejectBadPositions(true);
-    SP3EphList.rejectBadClocks(true);
-     
-    list<string> files;
-    string subdir = confReader.fetchListValue("EphemerisDir");
-    auxiliary::getAllFiles(subdir, files);
-
-    for (auto file : files)
-    {
-        // Try to load each ephemeris file
-        try {
-
-            SP3EphList.loadFile(file);
-        }
-        catch (FileMissingException& e) {
-            // If file doesn't exist, issue a warning
-            cerr << "SP3 file '" << file << "' doesn't exist or you don't "
-                << "have permission to read it. Skipping it." << endl;
-
-            return false;
-        }
-    }
-    return true;
-}
-//reading clock
-bool Autonomus::loadClocks()
-{
-    list<string> files;
-    string subdir = confReader.fetchListValue("RinexClockDir");
-    auxiliary::getAllFiles(subdir, files);
-
-    for (auto file : files)
-    {
-        // Try to load each ephemeris file
-        try {
-            SP3EphList.loadRinexClockFile(file);
-        }
-        catch (FileMissingException& e) {
-            // If file doesn't exist, issue a warning
-            cerr << "Rinex clock file '" << file << "' doesn't exist or you don't "
-                << "have permission to read it. Skipping it." << endl;
-            return false;
-        }
-    }//   while ((ClkFile = confReader.fetchListValue("rinexClockFiles", station)) != "")
-    return true;
-}
-
-bool  Autonomus:: loadIono()
-{
-    list<string> files;
-    string subdir = confReader.fetchListValue("RinexNavFilesDir");
-    auxiliary::getAllFiles(subdir, files);
-
-    for (auto file : files)
-    {
-        try
-        {
-            IonoModel iMod;
-            Rinex3NavStream rNavFile;
-            Rinex3NavHeader rNavHeader;
-
-            rNavFile.open(file.c_str(), std::ios::in);
-            rNavFile >> rNavHeader;
-
-#pragma region try get the date
-			int doy = -1, yr = -1;
-			CommonTime refTime = CommonTime::BEGINNING_OF_TIME;
-			if (rNavHeader.fileAgency == "AIUB")
-			{
-				for (auto it : rNavHeader.commentList)
-				{
-					std::tr1::cmatch res;
-					std::tr1::regex rxDoY("DAY [0-9]{3}"), rxY(" [0-9]{4}");
-					bool b = std::tr1::regex_search(it.c_str(), res, rxDoY);
-					if (b)
-					{
-						string sDay = res[0];
-						sDay = sDay.substr(sDay.size() - 4, 4);
-						doy = stoi(sDay);
-					}
-					if (std::tr1::regex_search(it.c_str(), res, rxY))
-					{
-						string sDay = res[0];
-						sDay = sDay.substr(sDay.size() - 5, 5);
-						yr = stoi(sDay);
-					}
-					if (doy > 0 && yr > 0)
-					{
-						refTime = YDSTime(yr, doy,0,TimeSystem::GPS);
-						break;
-					}
-				}
-			}
-			else
-			{
-				long week = rNavHeader.mapTimeCorr["GPUT"].refWeek;
-				if (week > 0)
-				{
-					GPSWeekSecond gpsws = GPSWeekSecond(week, 0);
-					refTime = gpsws.convertToCommonTime();
-				}
-			}
-#pragma endregion
-
-            if (rNavHeader.valid & Rinex3NavHeader::validIonoCorrGPS)
-            {
-                // Extract the Alpha and Beta parameters from the header
-                double* ionAlpha = rNavHeader.mapIonoCorr["GPSA"].param;
-                double* ionBeta = rNavHeader.mapIonoCorr["GPSB"].param;
-
-                // Feed the ionospheric model with the parameters
-                iMod.setModel(ionAlpha, ionBeta);
-            }
-            else
-            {
-                cerr << "WARNING: Navigation file " << file
-                    << " doesn't have valid ionospheric correction parameters." << endl;
-            }
-
-            ionoStore.addIonoModel(refTime, iMod);
-        }
-        catch (...)
-        {
-            cerr << "Problem opening file " << file << endl;
-            cerr << "Maybe it doesn't exist or you don't have proper read "
-                << "permissions." << endl;
-            exit(-1);
-        }
-    }
-    return true;
-}
-//
-void  Autonomus:: initProcess()
-{
-    isSpace = confReader.fetchListValueAsBoolean("IsSpaceborneRcv");
-    if (isSpace)
-        swichToSpaceborn();
-    else
-    {
-        double xapp(confReader.fetchListValueAsDouble("nominalPosition"));
-        double yapp(confReader.fetchListValueAsDouble("nominalPosition"));
-        double zapp(confReader.fetchListValueAsDouble("nominalPosition"));
-        nominalPos = Position(xapp, yapp, zapp);
-        DoY = confReader.fetchListValueAsInt("dayOfYear");
-    }
-
-    maskEl = confReader.fetchListValueAsDouble("ElMask");
-    maskSNR = confReader.fetchListValueAsInt("SNRmask");
-
-    cout << "mask El " << maskEl << endl;
-    cout << "mask SNR " << (int)maskSNR << endl;
-}
+#include"PPPSolverLEO.h"
+#define DBG = 0
 //
 void Autonomus::PRprocess()
 {
@@ -281,8 +24,8 @@ void Autonomus::PRprocess()
     solverPR->ionoType =  (PRIonoCorrType)confReader.fetchListValueAsInt("PRionoCorrType");
 
     ofstream os;
-    os.open("outputPR.txt");
-    for (auto obsFile : rinesObsFiles)
+    os.open("solutionPR.out");
+    for (auto obsFile : rinexObsFiles)
     {
         cout << obsFile << endl;
         try {
@@ -306,7 +49,7 @@ void Autonomus::PRprocess()
             try
             {
                 indexCNoL1 = roh.getObsIndex(L1CNo);
-                cout << "L1 C/No from " << L2CodeID << endl;
+                cout << "L1 C/No from " << L1CNo << endl;
             }
             catch (...)
             {
@@ -368,7 +111,7 @@ void Autonomus::PRprocess()
                     else
                         UseSat.push_back(false);
                 }
-                os << setprecision(12) << static_cast<YDSTime> (rod.time) << " ";
+                os << setprecision(17) <<  (rod.time) << " ";
                 if (GoodSats > 4)
                 {
                     Matrix<double> SVP(prnVec.size(), 4), Cov(4, 4);
@@ -402,17 +145,29 @@ void Autonomus::PRprocess()
         {
             cerr << "Caught an unexpected exception." << endl;
         }
+        cout << "Number of bad solutions " << badSol << endl;
     }
 }
 //
 void Autonomus::PPPprocess()
 {
     initProcess();
+
+#ifdef DBG 
+
+    cout << "Approximate Positions loading... ";
+    cout << loadApprPos("nomPos.in") << endl;
+#else
     PRprocess();
-   // PPPprocess2();
+#endif
+ 
+    if (isSpace)
+        PPPprocessLEO();
+    else
+        PPPprocessGB();
 }
 
-bool Autonomus:: PPPprocess2()
+bool Autonomus:: PPPprocessGB()
 {
     string stationName = confReader.fetchListValue("stationName");
 
@@ -591,13 +346,9 @@ bool Autonomus:: PPPprocess2()
     // Like in the "filterCode" case, the "filterPC" option allows you to
     // deactivate the "SimpleFilter" object that filters out PC, in case
     // you need to.
-    bool filterPC(true);
 
-    // Check if we are going to use this "SimpleFilter" object or not
-    if (filterPC)
-    {
-        pList.push_back(pcFilter);       // Add to processing list
-    }
+    pList.push_back(pcFilter);       // Add to processing list
+    
 
     // Object to align phase with code measurements
     PhaseCodeAlignment phaseAlign;
@@ -694,7 +445,7 @@ bool Autonomus:: PPPprocess2()
     int precision(4);
 
     ofstream outfile;
-    outfile.open("ppp_out.txt", ios::out);
+    outfile.open("PPP_sol.out", ios::out);
 
     // Let's check if we are going to print the model
     bool printmodel(confReader.getValueAsBoolean("printModel"));
@@ -716,7 +467,7 @@ bool Autonomus:: PPPprocess2()
     bool b = true;
 
     //// *** Now comes the REAL forwards processing part *** ////
-    for (auto obsFile : rinesObsFiles)
+    for (auto obsFile : rinexObsFiles)
     {
         cout << obsFile << endl;
         //Input observation file stream
@@ -736,7 +487,7 @@ bool Autonomus:: PPPprocess2()
         {
             // Store current epoch
             CommonTime time(gRin.header.epoch);
-            nominalPos = apprPos[time];
+            nominalPos = apprPos.at(time);
 
             basic.rxPos = nominalPos;
             grDelay.setNominalPosition(nominalPos);
@@ -772,7 +523,7 @@ bool Autonomus:: PPPprocess2()
                     >> linear3
                     >> baseChange
                     >> cDOP
-                    >> fbpppSolver;
+                    >> pppSolver;
                 // Let's process data. Thanks to 'ProcessingList' this is
                 // very simple and compact: Just one line of code!!!.
                // gRin >> pList;
@@ -823,8 +574,6 @@ bool Autonomus:: PPPprocess2()
 
             }  // End of 'if ( cycles < 1 )'
 
-               // The given epoch hass been processed. Let's get the next one
-
                // Ask if we are going to print the model
             if (printmodel)
             {
@@ -834,10 +583,6 @@ bool Autonomus:: PPPprocess2()
 
         rin.close();
     }
-
-       //print statistic
-       //printStats(outfile, stats);
-       // Close current Rinex observation stream
 
     // If we printed the model, we must close the file
     if (printmodel)
@@ -921,3 +666,421 @@ bool Autonomus:: PPPprocess2()
     outfile.close();
 
 }
+
+bool Autonomus::PPPprocessLEO()
+{
+    // This object will check that all required observables are present
+    RequireObservables requireObs;
+    requireObs.addRequiredType(TypeID::P2);
+    requireObs.addRequiredType(TypeID::L1);
+    requireObs.addRequiredType(TypeID::L2);
+
+    // This object will check that code observations are within
+    // reasonable limits
+    SimpleFilter pObsFilter;
+    pObsFilter.setFilteredType(TypeID::P2);
+
+    requireObs.addRequiredType(TypeID::P1);
+    pObsFilter.addFilteredType(TypeID::P1);
+
+
+    // This object defines several handy linear combinations
+    LinearCombinations comb;
+
+    // Object to compute linear combinations for cycle slip detection
+    ComputeLinear linear1;
+
+    linear1.addLinear(comb.pdeltaCombination);
+    linear1.addLinear(comb.mwubbenaCombination);
+
+    linear1.addLinear(comb.ldeltaCombination);
+    linear1.addLinear(comb.liCombination);
+
+                                    // Objects to mark cycle slips
+    LICSDetector2 markCSLI2;         // Checks LI cycle slips
+    MWCSDetector  markCSMW;          // Checks Merbourne-Wubbena cycle slips
+
+                                     // Object to keep track of satellite arcs
+    SatArcMarker markArc;
+    markArc.setDeleteUnstableSats(true);
+    markArc.setUnstablePeriod(151.0);
+
+    // Object to decimate data
+    double newSampling(confReader.getValueAsDouble("decimationInterval"));
+
+    Decimate decimateData(
+        newSampling,
+        confReader.getValueAsDouble("decimationTolerance"),
+        SP3EphList.getInitialTime());
+   
+                                         // Declare a basic modeler
+                                         //BasicModel basic(Position(0.0, 0.0, 0.0), SP3EphList);
+    BasicModel basic(nominalPos, SP3EphList);
+    // Set the minimum elevation
+    basic.setMinElev(maskEl);
+
+    basic.setDefaultObservable(TypeID::P1);
+
+    // Object to remove eclipsed satellites
+    EclipsedSatFilter eclipsedSV;
+
+    // Object to compute gravitational delay effects
+    GravitationalDelay grDelay(nominalPos);
+
+    // Vector from monument to antenna ARP [UEN], in meters
+    double uARP(confReader.fetchListValueAsDouble("offsetARP"));
+    double eARP(confReader.fetchListValueAsDouble("offsetARP"));
+    double nARP(confReader.fetchListValueAsDouble("offsetARP"));
+    Triple offsetARP(uARP, eARP, nARP);
+
+    AntexReader antexReader;
+    Antenna receiverAntenna;
+
+    // Feed Antex reader object with Antex file
+    string afile = genFilesDir;
+    afile += confReader.getValue("antexFile");
+
+    antexReader.open(afile);
+
+    // Get receiver antenna parameters
+    receiverAntenna =
+        antexReader.getAntenna(confReader.getValue("antennaModel"));
+    cout << "antenna loading succes!!!\n";
+    // Object to compute satellite antenna phase center effect
+    ComputeSatPCenter svPcenter(nominalPos);
+
+    // Feed 'ComputeSatPCenter' object with 'AntexReader' object
+    svPcenter.setAntexReader(antexReader);
+
+    // Declare an object to correct observables to monument
+    CorrectObservables corr(SP3EphList);
+
+    corr.setMonument(offsetARP);
+
+    // Check if we want to use Antex patterns
+    bool usepatterns(confReader.getValueAsBoolean("usePCPatterns"));
+    if (usepatterns)
+    {
+        corr.setAntenna(receiverAntenna);
+
+        // Should we use elevation/azimuth patterns or just elevation?
+        corr.setUseAzimuth(confReader.getValueAsBoolean("useAzim"));
+    }
+
+
+    // Object to compute wind-up effect
+    ComputeWindUp windup(SP3EphList, nominalPos, genFilesDir + confReader.getValue("satDataFile"));
+
+
+    // Object to compute ionosphere-free combinations to be used
+    // as observables in the PPP processing
+    ComputeLinear linear2;
+    linear2.addLinear(comb.pcCombination);
+    linear2.addLinear(comb.lcCombination);
+
+    // Add to processing list
+    // Declare a simple filter object to screen PC
+    SimpleFilter pcFilter;
+    pcFilter.setFilteredType(TypeID::PC);
+
+    // IMPORTANT NOTE:
+    // Like in the "filterCode" case, the "filterPC" option allows you to
+    // deactivate the "SimpleFilter" object that filters out PC, in case
+    // you need to.
+
+    // Object to align phase with code measurements
+    PhaseCodeAlignment phaseAlign;
+
+
+     // Object to compute prefit-residuals
+    ComputeLinear linear3(comb.pcPrefit);
+    linear3.addLinear(comb.lcPrefit);
+
+    // Declare a base-changing object: From ECEF to North-East-Up (NEU)
+    XYZ2NEU baseChange(nominalPos);
+
+    // Object to compute DOP values
+    ComputeDOP cDOP;
+
+    // Get if we want results in ECEF or NEU reference system
+    bool isNEU(false);
+
+    // White noise stochastic model
+    WhiteNoiseModel wnM(100.0);      // 100 m of sigma
+    // Declare solver objects
+    PPPSolverLEO   pppSolver(isNEU);
+    pppSolver.setCoordinatesModel(&wnM);
+    SolverPPPFB fbpppSolver(isNEU);
+    fbpppSolver.setCoordinatesModel(&wnM);
+
+    // Get if we want 'forwards-backwards' or 'forwards' processing only
+    int cycles(confReader.getValueAsInt("forwardBackwardCycles"));
+    
+    // This is the GNSS data structure that will hold all the
+    // GNSS-related information
+    gnssRinex gRin;
+
+#pragma region Output strams
+
+    // Prepare for printing
+    int precision(4);
+
+    ofstream outfile;
+    outfile.open("PPP_sol.out", ios::out);
+
+    // Let's check if we are going to print the model
+    bool printmodel(confReader.getValueAsBoolean("printModel"));
+
+    string modelName;
+    ofstream modelfile;
+
+    // Prepare for model printing
+    if (printmodel)
+    {
+        modelName = confReader.getValue("modelFile");
+        modelfile.open(modelName.c_str(), ios::out);
+    }
+#pragma endregion
+
+    //statistics for coorinates and tropo delay
+    vector<PowerSum> stats(4);
+    CommonTime time0;
+    bool b = true;
+
+    //// *** Now comes the REAL forwards processing part *** ////
+    for (auto obsFile : rinexObsFiles)
+    {
+        cout << obsFile << endl;
+        //Input observation file stream
+        Rinex3ObsStream rin;
+        // Open Rinex observations file in read-only mode
+        rin.open(obsFile, std::ios::in);
+
+        rin.exceptions(ios::failbit);
+        Rinex3ObsHeader roh;
+        Rinex3ObsData rod;
+
+        //read the header
+        auto it = apprPos.begin();
+        rin >> roh;
+
+        // Loop over all data epochs
+        while (rin >> gRin)
+        {
+            // Store current epoch
+            CommonTime time(gRin.header.epoch);
+#ifdef DBG
+            nominalPos = it->second;
+            it++;
+#else
+            nominalPos = apprPos.at(time);
+#endif // DEBUG
+
+            
+
+            basic.rxPos = nominalPos;
+            grDelay.setNominalPosition(nominalPos);
+            svPcenter.setNominalPosition(nominalPos);
+            baseChange = XYZ2NEU(nominalPos);
+
+            corr.setNominalPosition(nominalPos);
+
+            try
+            {
+                gRin >> requireObs
+                    >> pObsFilter
+                    >> linear1
+                    >> markCSLI2
+                    >> markCSMW
+                    >> markArc
+                    >> decimateData
+                    >> basic
+                    >> eclipsedSV
+                    >> grDelay
+                    >> svPcenter
+                    >> corr
+                    >> windup
+                    >> linear2
+                    >> pcFilter
+                    >> phaseAlign
+                    >> linear3
+                    >> baseChange
+                    >> cDOP
+                    >> pppSolver;
+                // Let's process data. Thanks to 'ProcessingList' this is
+                // very simple and compact: Just one line of code!!!.
+                // gRin >> pList;
+
+            }
+            catch (DecimateEpoch& d)
+            {
+                // If we catch a DecimateEpoch exception, just continue.
+                return false;
+            }
+            catch (Exception& e)
+            {
+
+                return false;
+            }
+            catch (...)
+            {
+                return false;
+            }
+
+            // Check what type of solver we are using
+            if (cycles < 1)
+            {
+
+                CommonTime time(gRin.header.epoch);
+                if (b)
+                {
+                    time0 = time;
+
+                    b = false;
+                }
+                // This is a 'forwards-only' filter. Let's print to output
+                // file the results of this epoch
+                printSolutionLEO(outfile,
+                              pppSolver,
+                              time0,
+                              time,
+                              cDOP,
+                              isNEU,
+                              gRin.numSats(),
+                              stats,
+                              precision,
+                              nominalPos);
+
+            }  // End of 'if ( cycles < 1 )'
+
+               // The given epoch hass been processed. Let's get the next one
+
+               // Ask if we are going to print the model
+            if (printmodel)
+            {
+                printModel(modelfile, gRin, 4);
+            }
+        }  // End of 'while(rin >> gRin)'
+
+        rin.close();
+    }
+
+    // If we printed the model, we must close the file
+    if (printmodel)
+    {
+        // Close model file for this station
+        modelfile.close();
+    }
+
+    //// *** Forwards processing part is over *** ////
+
+    // Now decide what to do: If solver was a 'forwards-only' version,
+    // then we are done and should continue with next station.
+    if (cycles < 1)
+    {
+
+        // Close output file for this station
+        outfile.close();
+
+        // We are done with this station. Let's show a message
+
+        // Go process next station
+        return true;
+    }
+
+    //// *** If we got here, it is a 'forwards-backwards' solver *** ////
+    int i_c = 0;
+    // Now, let's do 'forwards-backwards' cycles
+    try
+    {
+        cout << "cycle # " << ++i_c << endl;
+        fbpppSolver.ReProcess(cycles);
+    }
+    catch (Exception& e)
+    {
+
+        // Close output file for this station
+        outfile.close();
+
+       return false;
+
+    } 
+
+       // Reprocess is over. Let's finish with the last processing		
+       // Loop over all data epochs, again, and print results
+    while (fbpppSolver.LastProcess(gRin))
+    {
+
+        CommonTime time(gRin.header.epoch);
+        if (b)
+        {
+            time0 = time;
+            b = false;
+        }
+        nominalPos = apprPos[time];
+        printSolutionLEO(outfile,
+                      fbpppSolver,
+                      time0,
+                      time,
+                      cDOP,
+                      isNEU,
+                      gRin.numSats(),
+                      stats,
+                      precision,
+                      nominalPos
+        );
+
+    }  // End of 'while( fbpppSolver.LastProcess(gRin) )'
+
+       //print statistic
+    printStats(outfile, stats);
+
+    // We are done. Close and go for next station
+
+    // Close output file for this station
+    outfile.close();
+}
+
+bool Autonomus::loadApprPos(std::string path)
+{
+    apprPos.clear();
+    try
+    {
+        ifstream file(path);
+        if (file.is_open())
+        {
+            long JD(0), msec(0);
+            double fmsec(0.0),x(0.0),y(0.0),z(0.0),rco(0.0);
+            int solType(0);
+            string sTS;
+
+            string line;
+            while (file >> JD >> msec >> fmsec >> sTS >> solType >> x >> y >> z>> rco)
+            {
+                if (!solType)
+                {
+                    CommonTime time;
+                    time.setInternal(JD, msec, fmsec, TimeSystem::GPS);
+                    //
+                    Xvt xvt;
+                    xvt.x = Triple(x, y, z);
+                    xvt.clkbias = rco;
+                    apprPos.insert(pair<CommonTime, Xvt>(time, xvt));
+                }
+                string line;
+                getline(file, line);
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
+    catch (const std::exception& e)
+    {
+        cout << e.what()<<endl;
+        return false;
+    }
+    return true;
+}
+

@@ -13,7 +13,7 @@ class PRSolverBase
 public:
     PRSolverBase():
         maskEl(0.0), maskSNR(0.0), Sol(4), maxIter(15),
-        sigmaMax(25), ionoType(IF), ps()
+        sigmaMax(25), ionoType(IF), RMS3D(DBL_MAX), PDOP(DBL_MAX), ps()
     {};
     virtual ~PRSolverBase()
     { };

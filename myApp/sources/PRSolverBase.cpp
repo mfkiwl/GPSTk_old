@@ -13,7 +13,7 @@ void  PRSolverBase::selectObservables(
     vector<SatID> & PRNs,
     vector<double> &L1PRs,
     vector<uchar> & SNRs,
-    bool isApplyRCO
+    bool isApplyRCO 
 )
 {
     // Let's compute an useful constant (also found in "GNSSconstants.hpp")
@@ -25,7 +25,7 @@ void  PRSolverBase::selectObservables(
 
         for (it = rod.obs.begin(); it != rod.obs.end(); it++)
         {
-            double P1(0.0), C1(0.0);
+            double C1(0.0);
             char S1(0);
             try
             {
@@ -132,6 +132,6 @@ void PRSolverBase::calcStat(Vector<double> resid, Matrix<double> Cov)
 string PRSolverBase::printSolution(const vector<bool> &useSat)
 {
     std::ostringstream strs;
-    strs << setprecision(12) << " " << Sol(0) << " " << Sol(1) << " " << Sol(2) << " " << iter << " " << useSat.size() << " " << ps.size() << " " << setprecision(3) << sigma << " " << RMS3D << " " << PDOP;
+    strs << setprecision(12) << " " << Sol(0) << " " << Sol(1) << " " << Sol(2) << " " << Sol(3)/ C_MPS << " " << iter << " " << useSat.size() << " " << ps.size() << " " << setprecision(3) << sigma << " " << RMS3D << " " << PDOP;
     return strs.str();
 }

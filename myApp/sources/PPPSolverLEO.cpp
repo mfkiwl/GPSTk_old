@@ -50,7 +50,7 @@
     // Returns a string identifying this object.
     std::string PPPSolverLEO::getClassName() const
     {
-        return "SolverPPP";
+        return "PPPSolverLEO";
     }
 
 
@@ -76,16 +76,8 @@
        // Initializing method.
     void PPPSolverLEO::Init(void)
     {
-        //default 6e-10
-        double Qpr(6e-10);
-        // Set qdot value for default random walk stochastic model
-        rwalkModel.setQprime(Qpr);
-        std::cout << Qpr << " " << rwalkModel.getQ() << "\n";
-        // Pointer to default stochastic model for troposphere (random walk)
-        pTropoStoModel = &rwalkModel;
-
         // Set default coordinates stochastic model (constant)
-        setCoordinatesModel(&constantModel);
+        setCoordinatesModel(&whitenoiseModel);
 
         whitenoiseModelX.setSigma(100.0);
         whitenoiseModelY.setSigma(100.0);
@@ -482,32 +474,25 @@ covariance matrix.");
                // Now, let's fill the Phi and Q matrices
             SatID  dummySat;
 
-            // First, the troposphere
-            pTropoStoModel->Prepare(dummySat,
-                                    gData);
-            phiMatrix(0, 0) = pTropoStoModel->getPhi();
-            qMatrix(0, 0) = pTropoStoModel->getQ();
-
-
             // Second, the coordinates
             pCoordXStoModel->Prepare(dummySat, gData);
-            phiMatrix(1, 1) = pCoordXStoModel->getPhi();
-            qMatrix(1, 1) = pCoordXStoModel->getQ();
+            phiMatrix(0, 0) = pCoordXStoModel->getPhi();
+            qMatrix(0, 0) = pCoordXStoModel->getQ();
 
             pCoordYStoModel->Prepare(dummySat, gData);
-            phiMatrix(2, 2) = pCoordYStoModel->getPhi();
-            qMatrix(2, 2) = pCoordYStoModel->getQ();
+            phiMatrix(1, 1) = pCoordYStoModel->getPhi();
+            qMatrix(1, 1) = pCoordYStoModel->getQ();
 
             pCoordZStoModel->Prepare(dummySat, gData);
-            phiMatrix(3, 3) = pCoordZStoModel->getPhi();
-            qMatrix(3, 3) = pCoordZStoModel->getQ();
+            phiMatrix(2, 2) = pCoordZStoModel->getPhi();
+            qMatrix(2, 2) = pCoordZStoModel->getQ();
 
 
             // Third, the receiver clock
             pClockStoModel->Prepare(dummySat,
                                     gData);
-            phiMatrix(4, 4) = pClockStoModel->getPhi();
-            qMatrix(4, 4) = pClockStoModel->getQ();
+            phiMatrix(3, 3) = pClockStoModel->getPhi();
+            qMatrix(3, 3) = pClockStoModel->getQ();
 
 
             // Finally, the phase biases
@@ -735,7 +720,6 @@ covariance matrix.");
         TypeIDSet tempSet;
         // Watch out here: 'tempSet' is a 'std::set', and all sets order their
         // elements. According to 'TypeID' class, this is the proper order:
-        tempSet.insert(TypeID::wetMap);  // BEWARE: The first is wetMap!!!
 
         if (useNEU)
         {
@@ -751,7 +735,7 @@ covariance matrix.");
         }
         tempSet.insert(TypeID::cdt);     // #5
 
-                                         // Now, we build the basic equation definition
+        // Now, we build the basic equation definition
         defaultEqDef.header = TypeID::prefitC;
         defaultEqDef.body = tempSet;
 

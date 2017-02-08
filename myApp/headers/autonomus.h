@@ -26,12 +26,16 @@ public :
 
     virtual void process()
     {};
+    void initProcess();
     void PRprocess();
     void PPPprocess();
-    bool PPPprocess2();
-    void initProcess();
+
+
 protected:
-   
+    bool PPPprocessGB();
+    bool PPPprocessLEO();
+    bool loadApprPos(std::string path);
+
     void printModel(ofstream& modelfile,
                          const gnssRinex& gData,
                          int   precision);
@@ -48,7 +52,18 @@ protected:
                        int   precision,
                        const Position &nomXYZ);
 
-    void Autonomus::printStats(ofstream& outfile, const vector<PowerSum> &stats);
+    void printSolutionLEO(ofstream& outfile,
+                       const SolverLMS& solver,
+                       const CommonTime& time0,
+                       const CommonTime& time,
+                       const ComputeDOP& cDOP,
+                       bool  useNEU,
+                       int   numSats,
+                       vector<PowerSum> &stats,
+                       int   precision,
+                       const Position &nomXYZ);
+
+    void printStats(ofstream& outfile, const vector<PowerSum> &stats);
  
     bool isSpace = false;
     string genFilesDir;
@@ -75,8 +90,8 @@ protected:
 	//
     PRSolverBase *solverPR;
 	IonoModelStore ionoStore;
-    list<string> rinesObsFiles;
-    map<CommonTime, Xvt> apprPos;
+    list<string> rinexObsFiles;
+    map<CommonTime, Xvt,std::less<CommonTime>> apprPos;
 
 };
 
