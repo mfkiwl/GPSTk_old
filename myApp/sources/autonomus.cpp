@@ -492,6 +492,7 @@ bool Autonomus:: PPPprocessGB()
             basic.rxPos = nominalPos;
             grDelay.setNominalPosition(nominalPos);
             svPcenter.setNominalPosition(nominalPos);
+			windup.setNominalPosition(nominalPos);
             baseChange = XYZ2NEU(nominalPos);
 
             // Compute solid, oceanic and pole tides effects at this epoch
@@ -796,8 +797,6 @@ bool Autonomus::PPPprocessLEO()
     ComputeLinear linear3(comb.pcPrefit);
     linear3.addLinear(comb.lcPrefit);
 
-    // Declare a base-changing object: From ECEF to North-East-Up (NEU)
-    XYZ2NEU baseChange(nominalPos);
 
     // Object to compute DOP values
     ComputeDOP cDOP;
@@ -881,7 +880,9 @@ bool Autonomus::PPPprocessLEO()
             basic.rxPos = nominalPos;
             grDelay.setNominalPosition(nominalPos);
             svPcenter.setNominalPosition(nominalPos);
-            baseChange = XYZ2NEU(nominalPos);
+			windup.setNominalPosition(nominalPos);
+
+			XYZ2NEU baseChange(nominalPos);
 
             corr.setNominalPosition(nominalPos);
 

@@ -596,8 +596,6 @@ private:
         return (*this);
     };
 
-
-
 }; // End of class 'SolverPPP'
 
    //@}
