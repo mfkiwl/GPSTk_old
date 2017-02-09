@@ -46,7 +46,7 @@ public:
             Vector<double>& Resid,
             IonoModelStore &iono
         )=0;
-
+	    
         string printSolution(const vector<bool> &UseSat);
 
         PRIonoCorrType ionoType;

@@ -260,3 +260,53 @@ void  Autonomus:: initProcess()
     cout << "mask El " << maskEl << endl;
     cout << "mask SNR " << (int)maskSNR << endl;
 }
+
+void Autonomus::checkObservable(const string & path)
+{
+	ofstream os("ObsStat.out");
+
+	for (auto obsFile : rinexObsFiles)
+	{
+
+		//Input observation file stream
+		Rinex3ObsStream rin;
+		// Open Rinex observations file in read-only mode
+		rin.open(obsFile, std::ios::in);
+
+		rin.exceptions(ios::failbit);
+		Rinex3ObsHeader roh;
+		Rinex3ObsData rod;
+
+		//read the header
+		rin >> roh;
+		int indexC1 = roh.getObsIndex(L1CCodeID);
+		int indexCNoL1 = roh.getObsIndex(L1CNo);
+		int indexP1 = roh.getObsIndex(L1PCodeID);
+		int indexP2 = roh.getObsIndex(L2CodeID);
+		while (rin>>rod)
+		{
+			if (rod.epochFlag == 0 || rod.epochFlag == 1)  // Begin usable data
+			{
+				int NumC1(0), NumP1(0), NumP2(0), NumBadCNo1(0);
+				os << setprecision(12) << rod.time << " " << rod.numSVs<<" ";
+
+				for (auto it : rod.obs)
+				{
+					double C1 = rod.getObs(it.first, indexC1).data;
+
+					int CNoL1 = rod.getObs(it.first, indexCNoL1).data;
+					if (CNoL1 > 30) NumBadCNo1++;
+
+					double P1 = rod.getObs(it.first, indexP1).data;
+					if (P1 > 0.0)  NumP1++;
+					
+					double P2 = rod.getObs(it.first, indexP2).data;
+					if (P2 > 0.0)  NumP2++;
+				}
+
+				os << NumBadCNo1 << " " << NumP1 << " " << NumP2 << endl;
+			}
+		}
+
+	}
+}

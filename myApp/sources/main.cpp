@@ -14,6 +14,6 @@ int main(int argc, char *argv[])
     //cout << proc.loadClocks() << endl;
     cout << "IonoModel Loading... ";
     cout << proc.loadIono() << endl;
-
-    proc.PPPprocess();
+	proc.checkObservable("checkObs.out");
+    // proc.PPPprocess();
 }

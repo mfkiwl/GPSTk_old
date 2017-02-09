@@ -23,6 +23,7 @@ public :
     bool loadClocks();
     void swichToSpaceborn();
     void swichToGroundBased(TropModel & tModel);
+	void checkObservable(const string & path);
 
     virtual void process()
     {};
