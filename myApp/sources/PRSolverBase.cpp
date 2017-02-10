@@ -23,14 +23,14 @@ void  PRSolverBase::selectObservables(
     {
         Rinex3ObsData::DataMap::const_iterator it;
 
-        for (it = rod.obs.begin(); it != rod.obs.end(); it++)
-        {
+		for (auto it : rod.obs)
+		{
             double C1(0.0);
             char S1(0);
             try
             {
-                C1 = rod.getObs((*it).first, iL1PR).data;
-                S1 = rod.getObs((*it).first, iL1SNR).data;
+                C1 = rod.getObs(it.first, iL1PR).data;
+                S1 = rod.getObs(it.first, iL1SNR).data;
             }
             catch (...)
             {
@@ -44,7 +44,7 @@ void  PRSolverBase::selectObservables(
                 double P2(0.0);
                 try
                 {
-                    P2 = rod.getObs((*it).first, iL2PR).data;
+                    P2 = rod.getObs(it.first, iL2PR).data;
                 }
                 catch (...)
                 {
@@ -55,7 +55,7 @@ void  PRSolverBase::selectObservables(
                 C1 -= ionocorr;
             }
 
-            PRNs.push_back((*it).first);
+            PRNs.push_back(it.first);
             SNRs.push_back(S1);
             if (isApplyRCO) C1 -= rod.clockOffset*C_MPS;
             L1PRs.push_back(C1);

@@ -31,7 +31,6 @@ public :
     void PRprocess();
     void PPPprocess();
 
-
 protected:
     bool PPPprocessGB();
     bool PPPprocessLEO();
@@ -73,7 +72,7 @@ protected:
     double maskEl;
      
 	 const char * L1CCodeID = "C1";
-     const char * L1PCodeID = "C1";
+     const char * L1PCodeID = "C1W";
      const char * L2CodeID = "C2W";
      const char * L1CNo =    "S1C";
     //

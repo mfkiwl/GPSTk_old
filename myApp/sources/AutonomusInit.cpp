@@ -263,7 +263,7 @@ void  Autonomus:: initProcess()
 
 void Autonomus::checkObservable(const string & path)
 {
-	ofstream os("ObsStat.out");
+	ofstream os("ObsStatisic.out");
 
 	for (auto obsFile : rinexObsFiles)
 	{
@@ -288,7 +288,7 @@ void Autonomus::checkObservable(const string & path)
 			if (rod.epochFlag == 0 || rod.epochFlag == 1)  // Begin usable data
 			{
 				int NumC1(0), NumP1(0), NumP2(0), NumBadCNo1(0);
-				os << setprecision(12) << rod.time << " " << rod.numSVs<<" ";
+				os << setprecision(12) << (CivilTime)rod.time << " " << rod.numSVs<<" ";
 
 				for (auto it : rod.obs)
 				{
