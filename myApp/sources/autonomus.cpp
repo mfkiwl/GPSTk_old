@@ -4,7 +4,7 @@
 #include<windows.h>
 #include<regex>
 #include"PPPSolverLEO.h"
-#define DBG = 0
+//#define DBG 
 //
 void Autonomus::PRprocess()
 {
@@ -15,9 +15,11 @@ void Autonomus::PRprocess()
         NeillModel = NeillTropModel(nominalPos.getAltitude(), nominalPos.getGeodeticLatitude(), DoY);
         swichToGroundBased(NeillModel);
     }
-
+    
     int badSol = 0;
     apprPos.clear();
+    
+    cout <<"solverType "<< solverPR->getName() << endl;
 
     solverPR->maskEl = maskEl;
     solverPR->maskSNR = maskSNR;
@@ -25,6 +27,10 @@ void Autonomus::PRprocess()
 
     ofstream os;
     os.open("solutionPR.out");
+    //decimation
+    int sampl(10);
+    double tol(0.1);
+    
     for (auto obsFile : rinexObsFiles)
     {
         cout << obsFile << endl;
@@ -38,7 +44,7 @@ void Autonomus::PRprocess()
             rin.exceptions(ios::failbit);
             Rinex3ObsHeader roh;
             Rinex3ObsData rod;
-
+            
             //read the header
             rin >> roh;
 
@@ -87,6 +93,10 @@ void Autonomus::PRprocess()
             // Let's process all lines of observation data, one by one
             while (rin >> rod)
             {
+                GPSWeekSecond gpst = static_cast<GPSWeekSecond>(rod.time);
+
+                if (fmod(gpst.getSOW(), sampl) > tol) continue;
+
                 int GoodSats = 0;
                 int res = 0;
 
@@ -97,7 +107,8 @@ void Autonomus::PRprocess()
                 vector<double> rangeVec;
                 vector<uchar> SNRs;
                 vector<bool> UseSat;
-
+                //
+                
                 solverPR->selectObservables(rod, indexC1, indexP2, indexCNoL1, prnVec, rangeVec, SNRs);
                 solverPR->Sol = 0.0;
 
@@ -111,7 +122,8 @@ void Autonomus::PRprocess()
                     else
                         UseSat.push_back(false);
                 }
-                os << setprecision(17) <<  (rod.time) << " ";
+
+                os << setprecision(17) << gpst << " ";
                 if (GoodSats > 4)
                 {
                     Matrix<double> SVP(prnVec.size(), 4), Cov(4, 4);
@@ -140,6 +152,7 @@ void Autonomus::PRprocess()
         catch (Exception& e)
         {
             cerr << e << endl;
+            cerr << "Caught an unexpected exception." << endl;
         }
         catch (...)
         {
@@ -153,14 +166,14 @@ void Autonomus::PPPprocess()
 {
     initProcess();
 
-#ifdef DBG 
+#ifndef DBG 
 
     cout << "Approximate Positions loading... ";
     cout << loadApprPos("nomPos.in") << endl;
 #else
     PRprocess();
 #endif
- 
+    cout << "1"<<endl;
     if (isSpace)
         PPPprocessLEO();
     else
@@ -274,8 +287,7 @@ bool Autonomus:: PPPprocessGB()
     Triple offsetARP(uARP, eARP, nARP);
 
 
-    // Declare some antenna-related variables
-    Triple offsetL1(0.0, 0.0, 0.0), offsetL2(0.0, 0.0, 0.0);
+
     AntexReader antexReader;
     Antenna receiverAntenna;
 
@@ -493,7 +505,7 @@ bool Autonomus:: PPPprocessGB()
             grDelay.setNominalPosition(nominalPos);
             svPcenter.setNominalPosition(nominalPos);
 			windup.setNominalPosition(nominalPos);
-            baseChange = XYZ2NEU(nominalPos);
+            XYZ2NEU baseChange(nominalPos);
 
             // Compute solid, oceanic and pole tides effects at this epoch
             Triple tides(solid.getSolidTide(time, nominalPos) + ocean.getOceanLoading(stationName, time) + pole.getPoleTide(time, nominalPos));
@@ -670,6 +682,7 @@ bool Autonomus:: PPPprocessGB()
 
 bool Autonomus::PPPprocessLEO()
 {
+    int outInt(confReader.getValueAsInt("outputInterval"));
     // This object will check that all required observables are present
     RequireObservables requireObs;
     requireObs.addRequiredType(TypeID::P2);
@@ -704,7 +717,7 @@ bool Autonomus::PPPprocessLEO()
                                      // Object to keep track of satellite arcs
     SatArcMarker markArc;
     markArc.setDeleteUnstableSats(true);
-    markArc.setUnstablePeriod(151.0);
+    markArc.setUnstablePeriod(61.0);
 
     // Object to decimate data
     double newSampling(confReader.getValueAsDouble("decimationInterval"));
@@ -728,46 +741,70 @@ bool Autonomus::PPPprocessLEO()
     // Object to compute gravitational delay effects
     GravitationalDelay grDelay(nominalPos);
 
+
     // Vector from monument to antenna ARP [UEN], in meters
     double uARP(confReader.fetchListValueAsDouble("offsetARP"));
     double eARP(confReader.fetchListValueAsDouble("offsetARP"));
     double nARP(confReader.fetchListValueAsDouble("offsetARP"));
     Triple offsetARP(uARP, eARP, nARP);
 
-    AntexReader antexReader;
-    Antenna receiverAntenna;
-
-    // Feed Antex reader object with Antex file
-    string afile = genFilesDir;
-    afile += confReader.getValue("antexFile");
-
-    antexReader.open(afile);
-
-    // Get receiver antenna parameters
-    receiverAntenna =
-        antexReader.getAntenna(confReader.getValue("antennaModel"));
-    cout << "antenna loading succes!!!\n";
-    // Object to compute satellite antenna phase center effect
-    ComputeSatPCenter svPcenter(nominalPos);
-
-    // Feed 'ComputeSatPCenter' object with 'AntexReader' object
-    svPcenter.setAntexReader(antexReader);
-
     // Declare an object to correct observables to monument
     CorrectObservables corr(SP3EphList);
-
     corr.setMonument(offsetARP);
 
-    // Check if we want to use Antex patterns
-    bool usepatterns(confReader.getValueAsBoolean("usePCPatterns"));
-    if (usepatterns)
-    {
-        corr.setAntenna(receiverAntenna);
 
-        // Should we use elevation/azimuth patterns or just elevation?
-        corr.setUseAzimuth(confReader.getValueAsBoolean("useAzim"));
+
+    // Feed Antex reader object with Antex file
+    AntexReader antexReader;
+    string afile = genFilesDir;
+    afile += confReader.getValue("antexFile");
+    antexReader.open(afile);
+
+    // Object to compute satellite antenna phase center effect
+    ComputeSatPCenter svPcenter(nominalPos);
+    // Feed 'ComputeSatPCenter' object with 'AntexReader' object
+    svPcenter.setAntexReader(antexReader);   
+
+#pragma region receiver antenna parameters
+
+    bool useAntex(confReader.fetchListValueAsBoolean("useRcvAntennaModel"));
+    Triple ofstL1(0.0, 0.0, 0.0), ofstL2(0.0, 0.0, 0.0);
+    if (useAntex)
+    {
+        Antenna receiverAntenna;
+        // Get receiver antenna parameters
+        string aModel(confReader.getValue("antennaModel"));
+        receiverAntenna = antexReader.getAntenna(aModel);
+
+        // Check if we want to use Antex patterns
+        bool usepatterns(confReader.getValueAsBoolean("usePCPatterns"));
+        if (usepatterns)
+        {
+            corr.setAntenna(receiverAntenna);
+            // Should we use elevation/azimuth patterns or just elevation?
+            corr.setUseAzimuth(confReader.getValueAsBoolean("useAzim"));
+        }
+    }
+    else
+    {
+    
+        // Fill vector from antenna ARP to L1 phase center [UEN], in meters
+        ofstL1[0] = confReader.fetchListValueAsDouble("offsetL1");
+        ofstL1[1] = confReader.fetchListValueAsDouble("offsetL1");
+        ofstL1[2] = confReader.fetchListValueAsDouble("offsetL1");
+
+        // Vector from antenna ARP to L2 phase center [UEN], in meters
+        ofstL2[0] = confReader.fetchListValueAsDouble("offsetL2");
+        ofstL2[1] = confReader.fetchListValueAsDouble("offsetL2");
+        ofstL2[2] = confReader.fetchListValueAsDouble("offsetL2");
+
+        //
+        corr.setL1pc(ofstL1);
+        corr.setL2pc(ofstL2);
+
     }
 
+#pragma endregion
 
     // Object to compute wind-up effect
     ComputeWindUp windup(SP3EphList, nominalPos, genFilesDir + confReader.getValue("satDataFile"));
@@ -791,7 +828,6 @@ bool Autonomus::PPPprocessLEO()
 
     // Object to align phase with code measurements
     PhaseCodeAlignment phaseAlign;
-
 
      // Object to compute prefit-residuals
     ComputeLinear linear3(comb.pcPrefit);
@@ -875,30 +911,32 @@ bool Autonomus::PPPprocessLEO()
             nominalPos = apprPos.at(time);
 #endif // DEBUG
 
-            
+            XYZ2NEU baseChange(nominalPos);
 
             basic.rxPos = nominalPos;
             grDelay.setNominalPosition(nominalPos);
             svPcenter.setNominalPosition(nominalPos);
 			windup.setNominalPosition(nominalPos);
-
-			XYZ2NEU baseChange(nominalPos);
-
             corr.setNominalPosition(nominalPos);
 
             try
             {
+               // cout <<(YDSTime)time<< " "<< gRin.numSats();
                 gRin >> requireObs
                     >> pObsFilter
                     >> linear1
-                    >> markCSLI2
-                    >> markCSMW
-                    >> markArc
-                    >> decimateData
+                   // >> markCSLI2;
+                    >> markCSMW;
+                //cout << " " << gRin.numSats();
+                gRin >> markArc;
+                //cout <<  " " << gRin.numSats() ;
+                gRin >> decimateData
                     >> basic
                     >> eclipsedSV
                     >> grDelay
-                    >> svPcenter
+                    >> svPcenter;
+                //cout <<  " " << gRin.numSats() << " ";
+                gRin >> requireObs
                     >> corr
                     >> windup
                     >> linear2
@@ -908,30 +946,29 @@ bool Autonomus::PPPprocessLEO()
                     >> baseChange
                     >> cDOP
                     >> pppSolver;
+               // cout <<  " " << gRin.numSats() << endl;
                 // Let's process data. Thanks to 'ProcessingList' this is
                 // very simple and compact: Just one line of code!!!.
                 // gRin >> pList;
-
             }
             catch (DecimateEpoch& d)
             {
-                // If we catch a DecimateEpoch exception, just continue.
-                return false;
+                continue;
             }
             catch (Exception& e)
             {
-
+                cout << e.getText() << endl;
                 return false;
             }
             catch (...)
             {
                 return false;
             }
+            double fm = fmod(((GPSWeekSecond)time).getSOW(), outInt);
 
             // Check what type of solver we are using
-            if (cycles < 1)
+            if (cycles < 1 && (fm<0.1))
             {
-
                 CommonTime time(gRin.header.epoch);
                 if (b)
                 {
@@ -941,16 +978,8 @@ bool Autonomus::PPPprocessLEO()
                 }
                 // This is a 'forwards-only' filter. Let's print to output
                 // file the results of this epoch
-                printSolutionLEO(outfile,
-                              pppSolver,
-                              time0,
-                              time,
-                              cDOP,
-                              isNEU,
-                              gRin.numSats(),
-                              stats,
-                              precision,
-                              nominalPos);
+
+                pppSolver.printSolution(outfile, time0, time, cDOP, gRin.numSats(), 0.0 , stats, nominalPos);
 
             }  // End of 'if ( cycles < 1 )'
 
@@ -1019,17 +1048,7 @@ bool Autonomus::PPPprocessLEO()
             b = false;
         }
         nominalPos = apprPos[time];
-        printSolutionLEO(outfile,
-                      fbpppSolver,
-                      time0,
-                      time,
-                      cDOP,
-                      isNEU,
-                      gRin.numSats(),
-                      stats,
-                      precision,
-                      nominalPos
-        );
+       // fbpppSolver.printSolution(outfile, time0, time, cDOP, gRin.numSats(), ofstL1[2], stats, nominalPos);
 
     }  // End of 'while( fbpppSolver.LastProcess(gRin) )'
 
@@ -1041,6 +1060,10 @@ bool Autonomus::PPPprocessLEO()
     // Close output file for this station
     outfile.close();
 }
+int Autonomus::getNumCS(const satTypeValueMap& gdata)
+{
+    return 0;
+}
 
 bool Autonomus::loadApprPos(std::string path)
 {
@@ -1050,19 +1073,18 @@ bool Autonomus::loadApprPos(std::string path)
         ifstream file(path);
         if (file.is_open())
         {
-            long JD(0), msec(0);
-            double fmsec(0.0),x(0.0),y(0.0),z(0.0),rco(0.0);
+            unsigned int W(0);
+            double sow(0.0),x(0.0),y(0.0),z(0.0),rco(0.0);
             int solType(0);
             string sTS;
 
             string line;
-            while (file >> JD >> msec >> fmsec >> sTS >> solType >> x >> y >> z>> rco)
+            while (file >> W >> sow >> sTS >> solType >> x >> y >> z>> rco)
             {
                 if (!solType)
                 {
-                    CommonTime time;
-                    time.setInternal(JD, msec, fmsec, TimeSystem::GPS);
-                    //
+                    GPSWeekSecond gpst(W, sow,TimeSystem::GPS);
+                    CommonTime time = static_cast<CommonTime> (gpst);
                     Xvt xvt;
                     xvt.x = Triple(x, y, z);
                     xvt.clkbias = rco;

@@ -64,7 +64,10 @@ protected:
                        const Position &nomXYZ);
 
     void printStats(ofstream& outfile, const vector<PowerSum> &stats);
- 
+    
+    //
+    int getNumCS(const satTypeValueMap& gdata);
+
     bool isSpace = false;
     string genFilesDir;
 

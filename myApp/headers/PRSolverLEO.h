@@ -12,7 +12,10 @@ public:
     {};
     virtual ~PRSolverLEO()
     {};
-
+    string virtual getName() override
+    {
+        return "PRSolverLEO";
+    };
 
     virtual int  solve(
         const CommonTime &t,

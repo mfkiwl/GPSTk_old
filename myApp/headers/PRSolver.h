@@ -15,6 +15,11 @@ public:
     };
     TropModel *tropo ;
 
+    string virtual getName() override
+    {
+        return "PRSolver";
+    };
+
     virtual int  solve(
         const CommonTime &t,
         const Matrix<double> &SVP,

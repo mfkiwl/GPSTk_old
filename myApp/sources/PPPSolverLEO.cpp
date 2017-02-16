@@ -79,20 +79,17 @@
         // Set default coordinates stochastic model (constant)
         setCoordinatesModel(&whitenoiseModel);
 
-        whitenoiseModelX.setSigma(100.0);
-        whitenoiseModelY.setSigma(100.0);
-        whitenoiseModelZ.setSigma(100.0);
+        whitenoiseModelX.setSigma(1000.0);
+        whitenoiseModelY.setSigma(1000.0);
+        whitenoiseModelZ.setSigma(1000.0);
 
         // Pointer to default receiver clock stochastic model (white noise)
         pClockStoModel = &whitenoiseModel;
 
         // Pointer to stochastic model for phase biases
         pBiasStoModel = &biasModel;
-
-        // Set default factor that multiplies phase weights
-        // If code sigma is 1 m and phase sigma is 1 cm, the ratio is 100:1
-        weightFactor = 10000.0;       // 100^2
-
+     
+        weightFactor = 100000.0;
 
     }  // End of method 'PPPSolverLEO::Init()'
 
@@ -794,4 +791,57 @@ covariance matrix.");
         return (*this);
 
     } // End of method 'PPPSolverLEO::setKinematic()'
+    void  PPPSolverLEO::printSolution(ofstream& outfile,
+                                      const CommonTime& time0,
+                                      const CommonTime& time,
+                                      const ComputeDOP& cDOP,
+                                      int   numSats,
+                                      double PCO,
+                                      vector<PowerSum> &stats,
+                                      const Position &nomXYZ)
+    {
+        outfile << fixed << setprecision(4);
+        // Print results
+        outfile << static_cast<YDSTime>(time).year << "-";   // Year           - #1
+        outfile << static_cast<YDSTime>(time).doy << "-";    // DayOfYear      - #2
+        outfile << static_cast<YDSTime>(time).sod << "  ";   // SecondsOfDay   - #3
+        outfile << setprecision(6) << (static_cast<YDSTime>(time).doy + static_cast<YDSTime>(time).sod / 86400.0) << "  " <<setprecision(4) ;
+
+        //calculate statistic
+        double x(0), y(0), z(0), varX(0), varY(0), varZ(0);
+
+        x = nomXYZ.X() + getSolution(TypeID::dx);    // dx    - #4
+        y = nomXYZ.Y() + getSolution(TypeID::dy);    // dy    - #5
+        z = nomXYZ.Z() + getSolution(TypeID::dz);    // dz    - #6
+
+
+        Position pos(x, y, z, Position::Cartesian);
+
+        double lat = pos.getTheta();
+        double lon = pos.getPhi();
+
+        double radius = pos.radius() - PCO;
+        Position pos2(lat, lon, radius, Position::Spherical);
+
+        varX = getVariance(TypeID::dx);     // Cov dx    - #8
+        varY = getVariance(TypeID::dy);     // Cov dy    - #9
+        varZ = getVariance(TypeID::dz);     // Cov dz    - #10
+
+    //
+        outfile << pos2.X() << "  " << pos2.Y() << "  " << pos2.Z()<<" ";
+        outfile << sqrt(varX + varY + varZ) << "  ";
+
+        outfile << numSats << endl;    // Number of satellites - #12
+
+        //time of convergence,  seconds;
+        double tConv(5400.0);
+
+        double dt = time - time0;
+        if (dt > tConv)
+        {
+            stats[0].add(x);
+            stats[1].add(y);
+            stats[2].add(z);
+        }
+    }
 
