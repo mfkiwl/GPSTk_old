@@ -460,6 +460,14 @@ public:
                                     double sigmaY = 100.0,
                                     double sigmaZ = 100.0);
 
+    void printSolution(ofstream& outfile,
+                       const CommonTime& time0,
+                       const CommonTime& time,
+                       const ComputeDOP& cDOP,
+                       int   numSats,
+                       double PCO,
+                       vector<PowerSum> &stats,
+                       const Position &nomXYZ);
 
     /// Returns a string identifying this object.
     virtual std::string getClassName(void) const;

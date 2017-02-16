@@ -17,7 +17,10 @@ public:
     {};
     virtual ~PRSolverBase()
     { };
-
+    string virtual getName()
+    {
+        return "PRSolverBase";
+    };
         void  selectObservables(
             const Rinex3ObsData &rod,
             int iL1Code,

@@ -99,7 +99,7 @@ namespace gpstk
 
          // Pointer to default receiver clock stochastic model (white noise)
       pClockStoModel = &whitenoiseModel;
-
+      
          // Pointer to stochastic model for phase biases
       pBiasStoModel  = &biasModel;
 

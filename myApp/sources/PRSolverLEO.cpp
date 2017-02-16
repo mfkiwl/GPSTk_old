@@ -36,6 +36,23 @@ int  PRSolverLEO::solve(
         for (n = 0, i = 0; i < useSat.size(); i++)
         {
             if (!useSat[i]) continue;
+
+            // time of flight (sec)
+            double rho(0.0);
+            if (iter == 0)
+                rho = 0.070;             // initial guess: 70ms
+            else
+                rho = RSS(SVP(i, 0) - Sol(0), SVP(i, 1) - Sol(1), SVP(i, 2) - Sol(2))
+                / ellGPS.c();
+
+            // correct for earth rotation
+            double  wt = ellGPS.angVelocity()*rho;  //radians
+            double  svxyz[3];
+
+            svxyz[0] = ::cos(wt)*SVP(i, 0) + ::sin(wt)*SVP(i, 1);
+            svxyz[1] = -::sin(wt)*SVP(i, 0) + ::cos(wt)*SVP(i, 1);
+            svxyz[2] = SVP(i, 2);
+
             double iodel(0.0);
             if (conv < 100 && useSat[i])
             {
@@ -53,15 +70,15 @@ int  PRSolverLEO::solve(
                 }
             }
 
-            double rho = RSS(SVP(i, 0) - Sol(0), SVP(i, 1) - Sol(1), SVP(i, 2) - Sol(2));
+            rho = RSS(svxyz[0] - Sol(0), svxyz[1] - Sol(1), svxyz[2] - Sol(2));
 
             // corrected pseudorange (m)
             CRange(n) = SVP(i, 3);
 
             // partials matrix
-            P(n, 0) = (Sol(0) - SVP(i, 0)) / rho; // x direction cosine
-            P(n, 1) = (Sol(1) - SVP(i, 1)) / rho; // y direction cosine
-            P(n, 2) = (Sol(2) - SVP(i, 2)) / rho; // z direction cosine
+            P(n, 0) = (Sol(0) - svxyz[0]) / rho; // x direction cosine
+            P(n, 1) = (Sol(1) - svxyz[1]) / rho; // y direction cosine
+            P(n, 2) = (Sol(2) - svxyz[2]) / rho; // z direction cosine
             P(n, 3) = 1.0;
 
             // data vector: corrected range residual
@@ -137,6 +154,21 @@ int PRSolverLEO::catchSatByResid(
             for (int i = 0; i < useSat.size(); i++)
             {
                 if (!useSat[i]) continue;
+                double rho(0.0);
+                // time of flight (sec)
+                if (iter == 0)
+                    rho = 0.070;             // initial guess: 70ms
+                else
+                    rho = RSS(SVP(i, 0) - Sol(0), SVP(i, 1) - Sol(1), SVP(i, 2) - Sol(2))
+                    / ellGPS.c();
+
+                // correct for earth rotation
+                double  wt = ellGPS.angVelocity()*rho;  //radians
+                double  svxyz[3];
+
+                svxyz[0] = ::cos(wt)*SVP(i, 0) + ::sin(wt)*SVP(i, 1);
+                svxyz[1] = -::sin(wt)*SVP(i, 0) + ::cos(wt)*SVP(i, 1);
+                svxyz[2] = SVP(i, 2);
 
                 double iodel(0.0);
                 if (conv < 100 && ionoType==PRIonoCorrType::Klobuchar)
@@ -147,15 +179,15 @@ int PRSolverLEO::catchSatByResid(
                     double iodel = iono.getCorrection(t, PosRX, elv, azm);
                 }
 
-                double rho = RSS(SVP(i, 0) - Sol(0), SVP(i, 1) - Sol(1), SVP(i, 2) - Sol(2));
+                rho = RSS(svxyz[0] - Sol(0), svxyz[1] - Sol(1), svxyz[2] - Sol(2));
 
                 // corrected pseudorange (m)
                 CRange(n) = SVP(i, 3);
 
                 // partials matrix
-                P(n, 0) = (Sol(0) - SVP(i, 0)) / rho; // x direction cosine
-                P(n, 1) = (Sol(1) - SVP(i, 1)) / rho; // y direction cosine
-                P(n, 2) = (Sol(2) - SVP(i, 2)) / rho; // z direction cosine
+                P(n, 0) = (Sol(0) - svxyz[0]) / rho; // x direction cosine
+                P(n, 1) = (Sol(1) - svxyz[1]) / rho; // y direction cosine
+                P(n, 2) = (Sol(2) - svxyz[2]) / rho; // z direction cosine
                 P(n, 3) = 1.0;
 
                 // data vector: corrected range residual

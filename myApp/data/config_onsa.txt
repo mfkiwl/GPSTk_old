@@ -1,0 +1,54 @@
+#generic files 
+##############################################################################
+GenericFilesDir  = GEN
+satDataFile      = PRN_GPS          
+antexFile        = I08.ATX         
+oceanLoadingFile = JUN2016.BLQ      
+
+#data directories
+##############################################################################
+RinesObsDir      = ONSA
+EphemerisDir     = EPH
+RinexClockDir    = CLK
+RinexNavFilesDir = NAV
+
+
+#PROCESS SETTINGS
+##############################################################################
+#masks
+##############################################################################
+ElMask =  5.0, deg
+SNRmask = 26,  dB*Hz
+
+#ionospheric correction for RP solution 
+#ionoCorrectionType==0 -> no apply iono correction
+#ionoCorrectionType==1 -> use Klobuchar model
+#ionoCorrectionType==2 -> use L3 combination 
+PRionoCorrType = 1;
+#
+IsSpaceborneRcv = FALSE
+#For ground based receiver only:
+#----------------------------------------------------------------
+stationName = ONSA
+nominalPosition = 3370658.8318 711876.9387 5349786.7450
+dayOfYear = 30
+#----------------------------------------------------------------
+#Antenna parameters
+offsetARP = 0.0 0.0 0.0   , antenna reference point offset
+antennaModel = AOAD/M_T        NONE
+usePCPatterns = TRUE
+useAzim = TRUE
+
+#
+decimationInterval = 1
+decimationTolerance = 0.1
+forwardBackwardCycles = 0
+filterCode = TRUE
+
+#pole
+poleDisplacements  = 0.043176 0.308192, arcsec
+#output
+printModel = TRUE
+modelFile = ppp_model.txt
+
+
