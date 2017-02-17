@@ -4,6 +4,8 @@
 #include<windows.h>
 #include<regex>
 #include"PPPSolverLEO.h"
+#include"PPPSolverLEOFwBw.h"
+
 //#define DBG 
 //
 void Autonomus::PRprocess()
@@ -683,6 +685,7 @@ bool Autonomus:: PPPprocessGB()
 bool Autonomus::PPPprocessLEO()
 {
     int outInt(confReader.getValueAsInt("outputInterval"));
+   
     // This object will check that all required observables are present
     RequireObservables requireObs;
     requireObs.addRequiredType(TypeID::P2);
@@ -712,7 +715,9 @@ bool Autonomus::PPPprocessLEO()
 
                                     // Objects to mark cycle slips
     LICSDetector2 markCSLI2;         // Checks LI cycle slips
-    MWCSDetector  markCSMW;          // Checks Merbourne-Wubbena cycle slips
+   // markCSLI2.setSatThreshold(1);
+
+    MWCSDetector  markCSMW(confReader.getValueAsDouble("MWNumLambdas"));          // Checks Merbourne-Wubbena cycle slips
 
                                      // Object to keep track of satellite arcs
     SatArcMarker markArc;
@@ -740,8 +745,7 @@ bool Autonomus::PPPprocessLEO()
 
     // Object to compute gravitational delay effects
     GravitationalDelay grDelay(nominalPos);
-
-
+    
     // Vector from monument to antenna ARP [UEN], in meters
     double uARP(confReader.fetchListValueAsDouble("offsetARP"));
     double eARP(confReader.fetchListValueAsDouble("offsetARP"));
@@ -751,8 +755,6 @@ bool Autonomus::PPPprocessLEO()
     // Declare an object to correct observables to monument
     CorrectObservables corr(SP3EphList);
     corr.setMonument(offsetARP);
-
-
 
     // Feed Antex reader object with Antex file
     AntexReader antexReader;
@@ -841,11 +843,11 @@ bool Autonomus::PPPprocessLEO()
     bool isNEU(false);
 
     // White noise stochastic model
-    WhiteNoiseModel wnM(100.0);      // 100 m of sigma
+    WhiteNoiseModel wnM(1000.0);      // 100 m of sigma
     // Declare solver objects
     PPPSolverLEO   pppSolver(isNEU);
     pppSolver.setCoordinatesModel(&wnM);
-    SolverPPPFB fbpppSolver(isNEU);
+    PPPSolverLEOFwBw fbpppSolver(isNEU);
     fbpppSolver.setCoordinatesModel(&wnM);
 
     // Get if we want 'forwards-backwards' or 'forwards' processing only
@@ -855,7 +857,7 @@ bool Autonomus::PPPprocessLEO()
     // GNSS-related information
     gnssRinex gRin;
 
-#pragma region Output strams
+#pragma region Output streams
 
     // Prepare for printing
     int precision(4);
@@ -918,18 +920,20 @@ bool Autonomus::PPPprocessLEO()
             svPcenter.setNominalPosition(nominalPos);
 			windup.setNominalPosition(nominalPos);
             corr.setNominalPosition(nominalPos);
-
+            int csnum(0);
             try
             {
-               // cout <<(YDSTime)time<< " "<< gRin.numSats();
+                //  cout <<(YDSTime)time<< " "<< gRin.numSats();
                 gRin >> requireObs
                     >> pObsFilter
-                    >> linear1
-                   // >> markCSLI2;
-                    >> markCSMW;
-                //cout << " " << gRin.numSats();
+                    >> linear1;
+                gRin >> markCSLI2;
+
+                gRin >> markCSMW;
+                //csnum = getNumCS(gRin);
+
                 gRin >> markArc;
-                //cout <<  " " << gRin.numSats() ;
+                //cout  <<" "<<csnum<<  " " << gRin.numSats();
                 gRin >> decimateData
                     >> basic
                     >> eclipsedSV
@@ -944,12 +948,13 @@ bool Autonomus::PPPprocessLEO()
                     >> phaseAlign
                     >> linear3
                     >> baseChange
-                    >> cDOP
-                    >> pppSolver;
-               // cout <<  " " << gRin.numSats() << endl;
-                // Let's process data. Thanks to 'ProcessingList' this is
-                // very simple and compact: Just one line of code!!!.
-                // gRin >> pList;
+                    >> cDOP;
+                if (cycles < 1)
+                    gRin >> pppSolver;
+                else
+                    gRin >> fbpppSolver;
+            
+             //   cout /*<<  " " << gRin.numSats()*/ << endl;
             }
             catch (DecimateEpoch& d)
             {
@@ -979,7 +984,7 @@ bool Autonomus::PPPprocessLEO()
                 // This is a 'forwards-only' filter. Let's print to output
                 // file the results of this epoch
 
-                pppSolver.printSolution(outfile, time0, time, cDOP, gRin.numSats(), 0.0 , stats, nominalPos);
+                pppSolver.printSolution(outfile, time0, time, cDOP, gRin, 0.0, 0.0 , stats, nominalPos);
 
             }  // End of 'if ( cycles < 1 )'
 
@@ -1048,7 +1053,7 @@ bool Autonomus::PPPprocessLEO()
             b = false;
         }
         nominalPos = apprPos[time];
-       // fbpppSolver.printSolution(outfile, time0, time, cDOP, gRin.numSats(), ofstL1[2], stats, nominalPos);
+        fbpppSolver.printSolution(outfile, time0, time, cDOP, gRin, 0.0, 0.0, stats, nominalPos);
 
     }  // End of 'while( fbpppSolver.LastProcess(gRin) )'
 
@@ -1060,9 +1065,14 @@ bool Autonomus::PPPprocessLEO()
     // Close output file for this station
     outfile.close();
 }
-int Autonomus::getNumCS(const satTypeValueMap& gdata)
+int Autonomus::getNumCS(const gnssRinex& gdata)
 {
-    return 0;
+    double csnum(0.0);
+    for (auto it: gdata.body)
+    {
+        csnum += it.second.at(gpstk::TypeID::CSL1);
+    }
+    return csnum;
 }
 
 bool Autonomus::loadApprPos(std::string path)
