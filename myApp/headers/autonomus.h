@@ -66,7 +66,7 @@ protected:
     void printStats(ofstream& outfile, const vector<PowerSum> &stats);
     
     //
-    int getNumCS(const satTypeValueMap& gdata);
+    int getNumCS(const gnssRinex& gdata);
 
     bool isSpace = false;
     string genFilesDir;

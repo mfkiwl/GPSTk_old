@@ -10,7 +10,6 @@ class auxiliary
 public:
     static int getAllFiles(string &subDir, list<string> &files);
     
-
 };
 
 #endif // ! AUXILIARY

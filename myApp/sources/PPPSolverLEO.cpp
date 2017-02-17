@@ -320,7 +320,6 @@ covariance matrix.");
     gnssRinex& PPPSolverLEO::Process(gnssRinex& gData)
         throw(ProcessingException)
     {
-
         try
         {
 
@@ -795,7 +794,8 @@ covariance matrix.");
                                       const CommonTime& time0,
                                       const CommonTime& time,
                                       const ComputeDOP& cDOP,
-                                      int   numSats,
+                                      const gnssRinex &  gRin,
+                                      int numCS,
                                       double PCO,
                                       vector<PowerSum> &stats,
                                       const Position &nomXYZ)
@@ -814,25 +814,15 @@ covariance matrix.");
         y = nomXYZ.Y() + getSolution(TypeID::dy);    // dy    - #5
         z = nomXYZ.Z() + getSolution(TypeID::dz);    // dz    - #6
 
-
-        Position pos(x, y, z, Position::Cartesian);
-
-        double lat = pos.getTheta();
-        double lon = pos.getPhi();
-
-        double radius = pos.radius() - PCO;
-        Position pos2(lat, lon, radius, Position::Spherical);
-
         varX = getVariance(TypeID::dx);     // Cov dx    - #8
         varY = getVariance(TypeID::dy);     // Cov dy    - #9
         varZ = getVariance(TypeID::dz);     // Cov dz    - #10
 
     //
-        outfile << pos2.X() << "  " << pos2.Y() << "  " << pos2.Z()<<" ";
+        outfile << x << "  " << y << "  " << z<<" ";
         outfile << sqrt(varX + varY + varZ) << "  ";
 
-        outfile << numSats << endl;    // Number of satellites - #12
-
+        outfile << gRin.numSats() <<" "<< numCS<< endl;    // Number of satellites - #12
         //time of convergence,  seconds;
         double tConv(5400.0);
 
