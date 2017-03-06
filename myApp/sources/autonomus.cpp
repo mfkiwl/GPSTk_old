@@ -198,11 +198,11 @@ bool Autonomus:: PPPprocessGB()
 
     // This object will check that code observations are within
     // reasonable limits
-    SimpleFilter pObsFilter;
-    pObsFilter.setFilteredType(TypeID::P2);
+    SimpleFilter PRFilter;
+    PRFilter.setFilteredType(TypeID::P2);
 
     requireObs.addRequiredType(TypeID::P1);
-    pObsFilter.addFilteredType(TypeID::P1);
+    PRFilter.addFilteredType(TypeID::P1);
 
     // Add 'requireObs' to processing list (it is the first)
     pList.push_back(requireObs);
@@ -222,7 +222,7 @@ bool Autonomus:: PPPprocessGB()
     // Check if we are going to use this "SimpleFilter" object or not
     if (filterCode)
     {
-        pList.push_back(pObsFilter);       // Add to processing list
+        pList.push_back(PRFilter);       // Add to processing list
     }
 
     // This object defines several handy linear combinations
@@ -519,7 +519,7 @@ bool Autonomus:: PPPprocessGB()
             try
             {
                 gRin >> requireObs
-                    >> pObsFilter
+                    >> PRFilter
                     >> linear1
                     >> markCSLI2
                     >> markCSMW
@@ -688,18 +688,19 @@ bool Autonomus::PPPprocessLEO()
    
     // This object will check that all required observables are present
     RequireObservables requireObs;
+    requireObs.addRequiredType(TypeID::P1);
     requireObs.addRequiredType(TypeID::P2);
     requireObs.addRequiredType(TypeID::L1);
     requireObs.addRequiredType(TypeID::L2);
+    requireObs.addRequiredType(TypeID::S1);
 
     // This object will check that code observations are within
     // reasonable limits
-    SimpleFilter pObsFilter;
-    pObsFilter.setFilteredType(TypeID::P2);
-
-    requireObs.addRequiredType(TypeID::P1);
-    pObsFilter.addFilteredType(TypeID::P1);
-
+    SimpleFilter PRFilter;
+    PRFilter.addFilteredType(TypeID::P1);
+    PRFilter.setFilteredType(TypeID::P2);
+    
+    SimpleFilter SNRFilter(TypeID::S1,(double)maskSNR, 1e7);
 
     // This object defines several handy linear combinations
     LinearCombinations comb;
@@ -732,8 +733,8 @@ bool Autonomus::PPPprocessLEO()
         confReader.getValueAsDouble("decimationTolerance"),
         SP3EphList.getInitialTime());
    
-                                         // Declare a basic modeler
-                                         //BasicModel basic(Position(0.0, 0.0, 0.0), SP3EphList);
+   // Declare a basic modeler
+    //BasicModel basic(Position(0.0, 0.0, 0.0), SP3EphList);
     BasicModel basic(nominalPos, SP3EphList);
     // Set the minimum elevation
     basic.setMinElev(maskEl);
@@ -811,7 +812,6 @@ bool Autonomus::PPPprocessLEO()
     // Object to compute wind-up effect
     ComputeWindUp windup(SP3EphList, nominalPos, genFilesDir + confReader.getValue("satDataFile"));
 
-
     // Object to compute ionosphere-free combinations to be used
     // as observables in the PPP processing
     ComputeLinear linear2;
@@ -835,24 +835,30 @@ bool Autonomus::PPPprocessLEO()
     ComputeLinear linear3(comb.pcPrefit);
     linear3.addLinear(comb.lcPrefit);
 
-
     // Object to compute DOP values
     ComputeDOP cDOP;
-
-    // Get if we want results in ECEF or NEU reference system
-    bool isNEU(false);
 
     // White noise stochastic model
     WhiteNoiseModel wnM(1000.0);      // 100 m of sigma
     // Declare solver objects
-    PPPSolverLEO   pppSolver(isNEU);
+    PPPSolverLEO   pppSolver(false);
     pppSolver.setCoordinatesModel(&wnM);
-    PPPSolverLEOFwBw fbpppSolver(isNEU);
+    PPPSolverLEOFwBw fbpppSolver(false);
     fbpppSolver.setCoordinatesModel(&wnM);
 
     // Get if we want 'forwards-backwards' or 'forwards' processing only
     int cycles(confReader.getValueAsInt("forwardBackwardCycles"));
-    
+  
+    list<double> phaseLimits, codeLimits;
+    double val(0);
+    while ((val = confReader.fetchListValueAsDouble("codeLimits")) != 0.0)
+        codeLimits.push_back(val);
+    while ((val = confReader.fetchListValueAsDouble("phaseLimits")) != 0.0)
+        phaseLimits.push_back(val);
+
+    fbpppSolver.setPhaseList(phaseLimits);
+    fbpppSolver.setCodeList(codeLimits);
+
     // This is the GNSS data structure that will hold all the
     // GNSS-related information
     gnssRinex gRin;
@@ -913,21 +919,23 @@ bool Autonomus::PPPprocessLEO()
             nominalPos = apprPos.at(time);
 #endif // DEBUG
 
+            ///update the nominal position in processing objects
             XYZ2NEU baseChange(nominalPos);
-
             basic.rxPos = nominalPos;
             grDelay.setNominalPosition(nominalPos);
             svPcenter.setNominalPosition(nominalPos);
 			windup.setNominalPosition(nominalPos);
             corr.setNominalPosition(nominalPos);
+
             int csnum(0);
             try
             {
                 //  cout <<(YDSTime)time<< " "<< gRin.numSats();
                 gRin >> requireObs
-                    >> pObsFilter
+                    >> PRFilter
+                   >>SNRFilter
                     >> linear1;
-                gRin >> markCSLI2;
+              //  gRin >> markCSLI2;
 
                 gRin >> markCSMW;
                 //csnum = getNumCS(gRin);
@@ -949,6 +957,7 @@ bool Autonomus::PPPprocessLEO()
                     >> linear3
                     >> baseChange
                     >> cDOP;
+
                 if (cycles < 1)
                     gRin >> pppSolver;
                 else
@@ -969,10 +978,10 @@ bool Autonomus::PPPprocessLEO()
             {
                 return false;
             }
-            double fm = fmod(((GPSWeekSecond)time).getSOW(), outInt);
+           
 
             // Check what type of solver we are using
-            if (cycles < 1 && (fm<0.1))
+            if (cycles < 1)
             {
                 CommonTime time(gRin.header.epoch);
                 if (b)
@@ -981,10 +990,13 @@ bool Autonomus::PPPprocessLEO()
 
                     b = false;
                 }
+
                 // This is a 'forwards-only' filter. Let's print to output
                 // file the results of this epoch
+                double fm = fmod(((GPSWeekSecond)time).getSOW(), outInt);
 
-                pppSolver.printSolution(outfile, time0, time, cDOP, gRin, 0.0, 0.0 , stats, nominalPos);
+                if (fm < 0.1)
+                    pppSolver.printSolution(outfile, time0, time, cDOP, gRin, 0.0, 0.0, stats, nominalPos);
 
             }  // End of 'if ( cycles < 1 )'
 
@@ -1017,9 +1029,6 @@ bool Autonomus::PPPprocessLEO()
         // Close output file for this station
         outfile.close();
 
-        // We are done with this station. Let's show a message
-
-        // Go process next station
         return true;
     }
 
@@ -1028,32 +1037,38 @@ bool Autonomus::PPPprocessLEO()
     // Now, let's do 'forwards-backwards' cycles
     try
     {
-        cout << "cycle # " << ++i_c << endl;
-        fbpppSolver.ReProcess(cycles);
+        cout << "cycle # " << ++i_c;
+        if (codeLimits.size() > 0 || phaseLimits.size() > 0)
+            fbpppSolver.ReProcess();
+        else
+            fbpppSolver.ReProcess(cycles);
+
+        cout << " rej. meas: " << fbpppSolver.getRejectedMeasurements() << endl;
     }
     catch (Exception& e)
     {
-
         // Close output file for this station
         outfile.close();
 
        return false;
-
     } 
 
        // Reprocess is over. Let's finish with the last processing		
        // Loop over all data epochs, again, and print results
     while (fbpppSolver.LastProcess(gRin))
     {
-
         CommonTime time(gRin.header.epoch);
+       
         if (b)
         {
             time0 = time;
             b = false;
         }
-        nominalPos = apprPos[time];
-        fbpppSolver.printSolution(outfile, time0, time, cDOP, gRin, 0.0, 0.0, stats, nominalPos);
+
+        nominalPos = apprPos.at(time);
+        double fm = fmod(((GPSWeekSecond)time).getSOW(), outInt);
+        if (fm < 0.1)
+            fbpppSolver.printSolution(outfile, time0, time, cDOP, gRin, 0.0, 0.0, stats, nominalPos);
 
     }  // End of 'while( fbpppSolver.LastProcess(gRin) )'
 
