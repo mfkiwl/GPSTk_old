@@ -3,37 +3,38 @@
 
 #include"stdafx.h"
 #include"PRSolverBase.h"
-
-
-class PRSolverLEO: public PRSolverBase
+namespace POD
 {
-public:
-    PRSolverLEO() : PRSolverBase()
-    {};
-    virtual ~PRSolverLEO()
-    {};
-    string virtual getName() override
+
+    class PRSolverLEO : public PRSolverBase
     {
-        return "PRSolverLEO";
+    public:
+        PRSolverLEO() : PRSolverBase()
+        {};
+        virtual ~PRSolverLEO()
+        {};
+        string virtual getName() override
+        {
+            return "PRSolverLEO";
+        };
+
+        virtual int  solve(
+            const CommonTime &t,
+            const Matrix<double> &SVP,
+            vector<bool> &useSat,
+            Matrix<double>& Cov,
+            Vector<double>& Resid,
+            IonoModelStore &iono
+        ) override;
+
+    protected:
+
+        virtual int catchSatByResid(
+            const CommonTime &t,
+            const Matrix<double> &SVP,
+            vector<bool> &useSat,
+            IonoModelStore &iono) override;
+
     };
-
-    virtual int  solve(
-        const CommonTime &t,
-        const Matrix<double> &SVP,
-        vector<bool> &useSat,
-        Matrix<double>& Cov,
-        Vector<double>& Resid,
-        IonoModelStore &iono
-	) override;
-
-protected:
-    
-    virtual int catchSatByResid(
-        const CommonTime &t,
-        const Matrix<double> &SVP,
-        vector<bool> &useSat,
-        IonoModelStore &iono ) override;
-
-};
-
+}
 #endif // !PR_SOLVER_LEO

@@ -1,6 +1,7 @@
 #include"stdafx.h"
 #include "PPPSolverLEOFwBw.h"
-
+namespace POD
+{
     // Returns a string identifying this object.
     std::string PPPSolverLEOFwBw::getClassName() const
     {
@@ -177,7 +178,7 @@
             }
 
             // If 'cycles > 1', let's do the other iterations
-            for (int i = 0; i<(cycles - 1); i++)
+            for (int i = 0; i < (cycles - 1); i++)
             {
 
                 // Forwards iteration
@@ -427,8 +428,8 @@
 
        // This method checks the limits and modifies 'gData' accordingly.
     void PPPSolverLEOFwBw::checkLimits(gnssRinex& gData,
-                                  double codeLimit,
-                                  double phaseLimit)
+                                       double codeLimit,
+                                       double phaseLimit)
     {
 
         // Set to store rejected satellites
@@ -510,4 +511,4 @@
         return (*this);
 
     }  // End of method 'PPPSolverLEOFwBw::setNEU()'
-
+}
