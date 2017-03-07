@@ -123,8 +123,18 @@
 #include"actions.h"
 #include"autonomus.h"
 #include"auxiliary.h"
+
 #include"PRSolverLEO.h"
 #include"PRSolver.h"
+
+#include"PPPSolverLEO.h"
+#include"PPPSolverLEOFwBw.h"
+
+#include"PPPSolutionBase.h"
+#include"PPPSolution.h"
+#include"PODSolution.h"
+
+#include"Solution.h"
 
 // TODO: reference additional headers your program requires here
 

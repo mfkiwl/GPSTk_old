@@ -4,23 +4,25 @@
 #include"stdafx.h"
 
 using namespace std;
-typedef unsigned char uchar;
-enum PRIonoCorrType { NONE = 0, Klobuchar, IF };
-
-using namespace std;
-class PRSolverBase 
+namespace POD
 {
-public:
-    PRSolverBase():
-        maskEl(0.0), maskSNR(0.0), Sol(4), maxIter(15),
-        sigmaMax(25), ionoType(IF), RMS3D(DBL_MAX), PDOP(DBL_MAX), ps()
-    {};
-    virtual ~PRSolverBase()
-    { };
-    string virtual getName()
+    typedef unsigned char uchar;
+    enum PRIonoCorrType { NONE = 0, Klobuchar, IF };
+
+    using namespace std;
+    class PRSolverBase
     {
-        return "PRSolverBase";
-    };
+    public:
+        PRSolverBase() :
+            maskEl(0.0), maskSNR(0.0), Sol(4), maxIter(15),
+            sigmaMax(25), ionoType(IF), RMS3D(DBL_MAX), PDOP(DBL_MAX), ps()
+        {};
+        virtual ~PRSolverBase()
+        { };
+        string virtual getName()
+        {
+            return "PRSolverBase";
+        };
         void  selectObservables(
             const Rinex3ObsData &rod,
             int iL1Code,
@@ -41,15 +43,15 @@ public:
             Matrix<double> &SVP
         );
 
-       virtual int solve(
+        virtual int solve(
             const CommonTime &t,
             const Matrix<double> &SVP,
             vector<bool> &useSat,
             Matrix<double>& Cov,
             Vector<double>& Resid,
             IonoModelStore &iono
-        )=0;
-	    
+        ) = 0;
+
         string printSolution(const vector<bool> &UseSat);
 
         PRIonoCorrType ionoType;
@@ -77,17 +79,13 @@ public:
 
         void calcStat(Vector<double> resid, Matrix<double> Cov);
 
-       virtual int catchSatByResid(
+        virtual int catchSatByResid(
             const CommonTime &t,
             const Matrix<double> &SVP,
             vector<bool> &useSat,
-            IonoModelStore &iono)=0;
+            IonoModelStore &iono) = 0;
 
-
-private:
-
-};
-
-
+    };
+}
 
 #endif // !PR_SOLVER_BASE

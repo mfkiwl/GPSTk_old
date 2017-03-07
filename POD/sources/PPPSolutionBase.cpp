@@ -1,114 +1,53 @@
-#include"autonomus.h"
+
+#include"stdafx.h"
+#include"PPPSolutionBase.h"
 #include<list>
 #include <direct.h>
 #include<windows.h>
 #include<regex>
+
 namespace POD
 {
-    Autonomus::Autonomus(char* arg0, char * discr)
-        :
-        BasicFramework(arg0,
-                       discr),
-        // Option initialization. "true" means a mandatory option
-        confFile(CommandOption::stdType,
-                 'c',
-                 "conffile",
-                 " [-c|--conffile]    Name of configuration file ('config.txt' by default).",
-                 false),
-        solverPR(new PRSolverLEO())
-
+    PPPSolutionBase* PPPSolutionBase::Factory(bool isSpaceborne, ConfDataReader & reader)
     {
-
-        // This option may appear just once at CLI
-        confFile.setMaxCount(1);
-
-    }  // End of 'ex9::ex9
-
-    bool Autonomus::loadConfig(char* path)
-    {
-        // Check if the user provided a configuration file name
-        if (confFile.getCount() > 0)
-        {
-
-            // Enable exceptions
-            confReader.exceptions(ios::failbit);
-
-            try
-            {
-
-                // Try to open the provided configuration file
-                confReader.open(path);
-
-            }
-            catch (...)
-            {
-
-                cerr << "Problem opening file "
-                    << confFile.getValue()[0]
-                    << endl;
-                cerr << "Maybe it doesn't exist or you don't have proper "
-                    << "read permissions." << endl;
-
-                exit(-1);
-
-            }  // End of 'try-catch' block
-
-        }
+        if (isSpaceborne)
+            return new PODSolution(reader);
         else
-        {
+            return new PPPSolution(reader);
+    }
+    PPPSolutionBase::PPPSolutionBase(ConfDataReader & cReader) : confReader(&cReader)
+    {
+    } 
 
-            try
-            {
-                // Try to open default configuration file
-                confReader.open("config.txt");
-            }
-            catch (...)
-            {
+    void swichToSpaceborn()
+    {
 
-                cerr << "Problem opening default configuration file 'pppconf_my.txt'"
-                    << endl;
-                cerr << "Maybe it doesn't exist or you don't have proper read "
-                    << "permissions. Try providing a configuration file with "
-                    << "option '-c'."
-                    << endl;
+    }
+    bool  PPPSolutionBase::LoadData()
+    {
+        cout << "Ephemeris Loading... ";
+        cout << loadEphemeris() << endl;
+        cout << "Clocks Loading... ";
+        cout << loadClocks() << endl;
+        cout << "IonoModel Loading... ";
+        cout << loadIono() << endl;
 
-                exit(-1);
-
-            }  // End of 'try-catch' block
-
-        }  // End of 'if ( confFile.getCount() > 0 )'
-
-
-           //get application dir
+        //get application dir
         char current_work_dir[_MAX_FNAME];
         _getcwd(current_work_dir, sizeof(current_work_dir));
         string s_dir(current_work_dir);
         //set generic files direcory 
-        string subdir = confReader.fetchListValue("GenericFilesDir");
+        string subdir = confReader->fetchListValue("GenericFilesDir");
         genFilesDir = s_dir + "\\" + subdir + "\\";
 
-        subdir = confReader.fetchListValue("RinesObsDir");
+        subdir = confReader->fetchListValue("RinesObsDir");
         auxiliary::getAllFiles(subdir, rinexObsFiles);
-        // If a given variable is not found in the provided section, then
-        // 'confReader' will look for it in the 'DEFAULT' section.
-        confReader.setFallback2Default(true);
 
         return true;
     }
-
-    void Autonomus::swichToSpaceborn()
-    {
-        delete solverPR;
-        solverPR = new PRSolverLEO();
-    }
+    
     //
-    void Autonomus::swichToGroundBased(TropModel & tModel)
-    {
-        delete solverPR;
-        solverPR = new PRSolver(tModel);
-    }
-    //
-    bool Autonomus::loadEphemeris()
+    bool PPPSolutionBase::loadEphemeris()
     {
         // Set flags to reject satellites with bad or absent positional
         // values or clocks
@@ -140,7 +79,7 @@ namespace POD
         return true;
     }
     //reading clock
-    bool Autonomus::loadClocks()
+    bool PPPSolutionBase::loadClocks()
     {
         list<string> files;
         string subdir = confReader.fetchListValue("RinexClockDir");
@@ -164,7 +103,7 @@ namespace POD
         return true;
     }
 
-    bool  Autonomus::loadIono()
+    bool  PPPSolutionBase::loadIono()
     {
         list<string> files;
         string subdir = confReader.fetchListValue("RinexNavFilesDir");
@@ -250,29 +189,8 @@ namespace POD
         }
         return true;
     }
-    //
-    void  Autonomus::initProcess()
-    {
-        isSpace = confReader.fetchListValueAsBoolean("IsSpaceborneRcv");
-        if (isSpace)
-            swichToSpaceborn();
-        else
-        {
-            double xapp(confReader.fetchListValueAsDouble("nominalPosition"));
-            double yapp(confReader.fetchListValueAsDouble("nominalPosition"));
-            double zapp(confReader.fetchListValueAsDouble("nominalPosition"));
-            nominalPos = Position(xapp, yapp, zapp);
-            DoY = confReader.fetchListValueAsInt("dayOfYear");
-        }
-
-        maskEl = confReader.fetchListValueAsDouble("ElMask");
-        maskSNR = confReader.fetchListValueAsInt("SNRmask");
-
-        cout << "mask El " << maskEl << endl;
-        cout << "mask SNR " << (int)maskSNR << endl;
-    }
-
-    void Autonomus::checkObservable(const string & path)
+    
+    void PPPSolutionBase::checkObservable(const string & path)
     {
         ofstream os("ObsStatisic.out");
 
@@ -321,4 +239,23 @@ namespace POD
 
         }
     }
+
+    void PPPSolutionBase::process()
+    {
+        initProcess();
+
+#ifndef DBG
+
+        cout << "Approximate Positions loading... ";
+        cout << loadApprPos("nomPos.in") << endl;
+#else
+        PRprocess();
+#endif
+        cout << "1" << endl;
+        if (isSpace)
+            PPPprocessLEO();
+        else
+            PPPprocessGB();
+    }
+
 }

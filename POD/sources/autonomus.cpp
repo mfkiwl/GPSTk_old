@@ -8,6 +8,8 @@
 
 //#define DBG 
 //
+namespace POD
+{
 void Autonomus::PRprocess()
 {
     //
@@ -1133,3 +1135,4 @@ bool Autonomus::loadApprPos(std::string path)
     return true;
 }
 
+}

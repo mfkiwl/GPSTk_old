@@ -161,7 +161,7 @@ if( BUILD_EXT )
 endif()
 	
 if( BUILD_MY )
-  add_subdirectory( myApp )
+  add_subdirectory( POD )
 endif()
 #----------------------------------------
 # Export the project import cmake files.

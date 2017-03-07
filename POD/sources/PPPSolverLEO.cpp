@@ -46,7 +46,8 @@
 #include "MatrixFunctors.hpp"
 #include<iostream>
 
-
+namespace POD
+{
     // Returns a string identifying this object.
     std::string PPPSolverLEO::getClassName() const
     {
@@ -71,8 +72,6 @@
 
     }  // End of 'PPPSolverLEO::SolverPPP()'
 
-
-
        // Initializing method.
     void PPPSolverLEO::Init(void)
     {
@@ -88,7 +87,7 @@
 
         // Pointer to stochastic model for phase biases
         pBiasStoModel = &biasModel;
-     
+
         weightFactor = 100000.0;
 
     }  // End of method 'PPPSolverLEO::Init()'
@@ -111,8 +110,8 @@
        *  -1 if problems arose
        */
     int PPPSolverLEO::Compute(const Vector<double>& prefitResiduals,
-                           const Matrix<double>& designMatrix,
-                           const Vector<double>& weightVector)
+                              const Matrix<double>& designMatrix,
+                              const Vector<double>& weightVector)
         throw(InvalidSolver)
     {
 
@@ -133,15 +132,15 @@ of weightVector");
 
                                                     // Fill the weight matrix diagonal with the content of
                                                     // the weights vector
-        for (int i = 0; i<wSize; i++)
+        for (int i = 0; i < wSize; i++)
         {
             wMatrix(i, i) = weightVector(i);
         }
 
         // Call the more general PPPSolverLEO::Compute() method
         return PPPSolverLEO::Compute(prefitResiduals,
-                                  designMatrix,
-                                  wMatrix);
+                                     designMatrix,
+                                     wMatrix);
 
     }  // End of method 'PPPSolverLEO::Compute()'
 
@@ -162,8 +161,8 @@ of weightVector");
        //  -1 if problems arose
        //
     int PPPSolverLEO::Compute(const Vector<double>& prefitResiduals,
-                           const Matrix<double>& designMatrix,
-                           const Matrix<double>& weightMatrix)
+                              const Matrix<double>& designMatrix,
+                              const Matrix<double>& weightMatrix)
         throw(InvalidSolver)
     {
 
@@ -366,7 +365,7 @@ covariance matrix.");
 
             Vector<double> prefitC(gData.getVectorOfTypeID(defaultEqDef.header));
             Vector<double> prefitL(gData.getVectorOfTypeID(TypeID::prefitL));
-            for (int i = 0; i<numCurrentSV; i++)
+            for (int i = 0; i < numCurrentSV; i++)
             {
                 measVector(i) = prefitC(i);
                 measVector(numCurrentSV + i) = prefitL(i);
@@ -388,7 +387,7 @@ covariance matrix.");
                 Vector<double>
                     weightsVector(gData.getVectorOfTypeID(TypeID::weight));
 
-                for (int i = 0; i<numCurrentSV; i++)
+                for (int i = 0; i < numCurrentSV; i++)
                 {
 
                     rMatrix(i, i) = weightsVector(i);
@@ -402,7 +401,7 @@ covariance matrix.");
             {
 
                 // If weights don't match, assign generic weights
-                for (int i = 0; i<numCurrentSV; i++)
+                for (int i = 0; i < numCurrentSV; i++)
                 {
                     rMatrix(i, i) = 1.0;
 
@@ -423,11 +422,11 @@ covariance matrix.");
             Matrix<double> dMatrix(gData.body.getMatrixOfTypes(defaultEqDef.body));
 
             // Let's fill 'hMatrix'
-            for (int i = 0; i<numCurrentSV; i++)
+            for (int i = 0; i < numCurrentSV; i++)
             {
 
                 // First, fill the coefficients related to tropo, coord and clock
-                for (int j = 0; j<numVar; j++)
+                for (int j = 0; j < numVar; j++)
                 {
 
                     hMatrix(i, j) = dMatrix(i, j);
@@ -527,7 +526,7 @@ covariance matrix.");
                 initialErrorCovariance(0, 0) = 0.25;          // (0.5 m)**2
 
                                                               // Second, the coordinates
-                for (int i = 1; i<4; i++)
+                for (int i = 1; i < 4; i++)
                 {
                     initialErrorCovariance(i, i) = 10000.0;    // (100 m)**2
                 }
@@ -536,7 +535,7 @@ covariance matrix.");
                 initialErrorCovariance(4, 4) = 9.0e10;        // (300 km)**2
 
                                                               // Finally, the phase biases
-                for (int i = 5; i<numUnknowns; i++)
+                for (int i = 5; i < numUnknowns; i++)
                 {
                     initialErrorCovariance(i, i) = 4.0e14;     // (20000 km)**2
                 }
@@ -558,12 +557,12 @@ covariance matrix.");
 
 
                 // Set first part of current state vector and covariance matrix
-                for (int i = 0; i<numVar; i++)
+                for (int i = 0; i < numVar; i++)
                 {
                     currentState(i) = solution(i);
 
                     // This fills the upper left quadrant of covariance matrix
-                    for (int j = 0; j<numVar; j++)
+                    for (int j = 0; j < numVar; j++)
                     {
                         currentErrorCov(i, j) = covMatrix(i, j);
                     }
@@ -674,7 +673,7 @@ covariance matrix.");
                // Now we have to add the new values to the data structure
             Vector<double> postfitCode(numCurrentSV, 0.0);
             Vector<double> postfitPhase(numCurrentSV, 0.0);
-            for (int i = 0; i<numCurrentSV; i++)
+            for (int i = 0; i < numCurrentSV; i++)
             {
                 postfitCode(i) = postfitResiduals(i);
                 postfitPhase(i) = postfitResiduals(i + numCurrentSV);
@@ -768,9 +767,9 @@ covariance matrix.");
        /** Set the positioning mode, kinematic or static.
        */
     PPPSolverLEO& PPPSolverLEO::setKinematic(bool kinematicMode,
-                                       double sigmaX,
-                                       double sigmaY,
-                                       double sigmaZ)
+                                             double sigmaX,
+                                             double sigmaY,
+                                             double sigmaZ)
     {
         if (kinematicMode)
         {
@@ -805,7 +804,7 @@ covariance matrix.");
         outfile << static_cast<YDSTime>(time).year << "-";   // Year           - #1
         outfile << static_cast<YDSTime>(time).doy << "-";    // DayOfYear      - #2
         outfile << static_cast<YDSTime>(time).sod << "  ";   // SecondsOfDay   - #3
-        outfile << setprecision(6) << (static_cast<YDSTime>(time).doy + static_cast<YDSTime>(time).sod / 86400.0) << "  " <<setprecision(4) ;
+        outfile << setprecision(6) << (static_cast<YDSTime>(time).doy + static_cast<YDSTime>(time).sod / 86400.0) << "  " << setprecision(4);
 
         //calculate statistic
         double x(0), y(0), z(0), varX(0), varY(0), varZ(0);
@@ -819,10 +818,10 @@ covariance matrix.");
         varZ = getVariance(TypeID::dz);     // Cov dz    - #10
 
     //
-        outfile << x << "  " << y << "  " << z<<" ";
+        outfile << x << "  " << y << "  " << z << " ";
         outfile << sqrt(varX + varY + varZ) << "  ";
 
-        outfile << gRin.numSats() <<" "<< numCS<< endl;    // Number of satellites - #12
+        outfile << gRin.numSats() << " " << numCS << endl;    // Number of satellites - #12
         //time of convergence,  seconds;
         double tConv(5400.0);
 
@@ -835,3 +834,4 @@ covariance matrix.");
         }
     }
 
+}
