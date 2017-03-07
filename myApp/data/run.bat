@@ -1,2 +1,0 @@
-myApp config.txt
-pause
