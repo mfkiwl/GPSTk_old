@@ -38,31 +38,21 @@ namespace POD
         bool loadApprPos(std::string path);
 
         void printModel(ofstream& modelfile,
-                        const gnssRinex& gData,
-                        int   precision);
+            const gnssRinex& gData,
+            int   precision);
 
         void printSolution(ofstream& outfile,
-                           const SolverLMS& solver,
-                           const CommonTime& time0,
-                           const CommonTime& time,
-                           const ComputeDOP& cDOP,
-                           bool  useNEU,
-                           int   numSats,
-                           double dryTropo,
-                           vector<PowerSum> &stats,
-                           int   precision,
-                           const Position &nomXYZ);
+            const SolverLMS& solver,
+            const CommonTime& time0,
+            const CommonTime& time,
+            const ComputeDOP& cDOP,
+            bool  useNEU,
+            int   numSats,
+            double dryTropo,
+            vector<PowerSum> &stats,
+            int   precision,
+            const Position &nomXYZ);
 
-        void printSolutionLEO(ofstream& outfile,
-                              const SolverLMS& solver,
-                              const CommonTime& time0,
-                              const CommonTime& time,
-                              const ComputeDOP& cDOP,
-                              bool  useNEU,
-                              int   numSats,
-                              vector<PowerSum> &stats,
-                              int   precision,
-                              const Position &nomXYZ);
 
         void printStats(ofstream& outfile, const vector<PowerSum> &stats);
 

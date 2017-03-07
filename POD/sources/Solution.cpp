@@ -5,7 +5,7 @@ namespace POD
 {
 
     Solution::Solution(char* path) :
-        BasicFramework("name",
+        BasicFramework("POD",
                        "discr"),
         // Option initialization. "true" means a mandatory option
         confFile(CommandOption::stdType,
@@ -26,20 +26,16 @@ namespace POD
         // Check if the user provided a configuration file name
         if (confFile.getCount() > 0)
         {
-
             // Enable exceptions
             confReader.exceptions(ios::failbit);
 
             try
             {
-
                 // Try to open the provided configuration file
                 confReader.open(path);
-
             }
             catch (...)
             {
-
                 cerr << "Problem opening file "
                     << confFile.getValue()[0]
                     << endl;
@@ -53,7 +49,6 @@ namespace POD
         }
         else
         {
-
             try
             {
                 // Try to open default configuration file
@@ -75,8 +70,6 @@ namespace POD
 
         }  // End of 'if ( confFile.getCount() > 0 )'
 
-
-
         // If a given variable is not found in the provided section, then
         // 'confReader' will look for it in the 'DEFAULT' section.
         confReader.setFallback2Default(true);
@@ -86,6 +79,6 @@ namespace POD
     void Solution::process()
     {
         solver->LoadData();
-        solver->process()
-    };
+        solver->process();
+    }
 }

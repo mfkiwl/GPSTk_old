@@ -9,6 +9,7 @@ namespace POD
 {
     class PPPSolutionBase 
     {
+
     public:
         static PPPSolutionBase * Factory(bool isSpaceborne, ConfDataReader & confReader);
 
@@ -27,9 +28,30 @@ namespace POD
         void checkObservable(const string & path);
 
         void process();
-        virtual void PPPprocess()=0;
 
     protected:
+        virtual void PRProcess()= 0;
+        virtual bool PPPprocess() = 0;
+
+        bool loadApprPos(std::string path);
+
+        void printModel(ofstream& modelfile,
+            const gnssRinex& gData,
+            int   precision);
+
+        void printSolution(ofstream& outfile,
+            const SolverLMS& solver,
+            const CommonTime& time0,
+            const CommonTime& time,
+            const ComputeDOP& cDOP,
+            bool  useNEU,
+            int   numSats,
+            double dryTropo,
+            vector<PowerSum> &stats,
+            int   precision,
+            const Position &nomXYZ);
+
+        void printStats(ofstream& outfile, const vector<PowerSum> &stats);
 
         string genFilesDir;
 

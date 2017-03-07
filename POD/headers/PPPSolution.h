@@ -9,6 +9,12 @@ namespace POD
     {
     public:
         PPPSolution(ConfDataReader & confReader);
+
+    protected:
+        virtual void PRProcess() override;
+        virtual bool PPPprocess() override;
+        NeillTropModel tropModel;
+
     };
 }
 
