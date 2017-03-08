@@ -250,7 +250,7 @@ namespace POD
 
     void PPPSolutionBase::process()
     {
-        PRProcess();
+
 #ifndef DBG
 
         cout << "Approximate Positions loading... ";
@@ -320,7 +320,6 @@ namespace POD
 
         outfile << numSats << endl;    // Number of satellites - #12
 
-                                       //time of convergence by default 7200 seconds;
         double tConv(5400.0);
 
         double dt = time - time0;
