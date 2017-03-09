@@ -4,7 +4,7 @@
 #include <direct.h>
 #include<windows.h>
 #include<regex>
-
+#define DBG
 namespace POD
 {
     PPPSolutionBase* PPPSolutionBase::Factory(bool isSpaceborne, ConfDataReader & reader)
@@ -22,6 +22,10 @@ namespace POD
         cout << "mask El " << maskEl << endl;
         cout << "mask SNR " << (int)maskSNR << endl;
     } 
+    PPPSolutionBase:: ~PPPSolutionBase()
+    {
+        delete solverPR;
+    }
 
     bool  PPPSolutionBase::LoadData()
     {
@@ -248,19 +252,18 @@ namespace POD
         }
     }
 
+    //
     void PPPSolutionBase::process()
     {
-
 #ifndef DBG
-
         cout << "Approximate Positions loading... ";
         cout << loadApprPos("nomPos.in") << endl;
 #else
-        PRprocess();
+        PRProcess();
 #endif
         PPPprocess();
-
     }
+
     // Method to print solution values
     void PPPSolutionBase::printSolution(ofstream& outfile,
         const SolverLMS& solver,

@@ -4,6 +4,7 @@
 #include"stdafx.h"
 
 using namespace std;
+using namespace gpstk;
 namespace POD
 {
     typedef unsigned char uchar;
@@ -18,7 +19,7 @@ namespace POD
             sigmaMax(25), ionoType(IF), RMS3D(DBL_MAX), PDOP(DBL_MAX), ps()
         {};
         virtual ~PRSolverBase()
-        { };
+        {};
         string virtual getName()
         {
             return "PRSolverBase";

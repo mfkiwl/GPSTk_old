@@ -3,6 +3,7 @@
 
 #include"stdafx.h"
 #include"PRSolverBase.h"
+using namespace gpstk;
 namespace POD
 {
 

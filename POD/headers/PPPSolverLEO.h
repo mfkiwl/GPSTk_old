@@ -3,9 +3,6 @@
 
 #include "stdafx.h"
 using namespace gpstk;
-
-
-
 /**
 * This class computes the Precise Point Positioning (PPP) solution  
 * GPS reseiver located on  LEO satellite  using a Kalman solver that 

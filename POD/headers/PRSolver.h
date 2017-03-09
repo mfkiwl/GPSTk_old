@@ -4,6 +4,7 @@
 #include"stdafx.h"
 
 using namespace std;
+using namespace gpstk;
 namespace POD
 {
     class PRSolver : public PRSolverBase

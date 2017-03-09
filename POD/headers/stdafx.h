@@ -120,8 +120,6 @@
 
 #include"ProcessingList.hpp"
 //
-#include"actions.h"
-#include"autonomus.h"
 #include"auxiliary.h"
 
 #include"PRSolverLEO.h"

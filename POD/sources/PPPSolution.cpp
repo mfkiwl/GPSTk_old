@@ -524,8 +524,8 @@ namespace POD
 
         cout << "solverType " << solverPR->getName() << endl;
 
-        solverPR->maskEl = maskEl;
-        solverPR->maskSNR = maskSNR;
+        solverPR->maskEl = 5;
+        solverPR->maskSNR = 30;
         solverPR->ionoType = (PRIonoCorrType)confReader->fetchListValueAsInt("PRionoCorrType");
 
         ofstream os;

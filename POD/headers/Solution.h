@@ -2,6 +2,7 @@
 #define SOLUTION
 
 #include"stdafx.h"
+using namespace gpstk;
 namespace POD
 {
     class Solution : public BasicFramework
