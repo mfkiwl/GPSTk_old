@@ -9,6 +9,7 @@ namespace POD
     {
     public:
         PODSolution(ConfDataReader & confReader);
+        virtual ~PODSolution(){};
 
     protected:
         virtual void PRProcess() override;

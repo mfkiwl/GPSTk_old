@@ -15,10 +15,7 @@ namespace POD
 
         PPPSolutionBase(ConfDataReader & confReader);
 
-        virtual ~PPPSolutionBase()
-        {
-            delete solverPR;
-        }
+        virtual ~PPPSolutionBase();
 
         bool LoadData();
         bool loadEphemeris();

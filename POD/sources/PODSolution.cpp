@@ -42,10 +42,10 @@ namespace POD
         // Objects to mark cycle slips
         LICSDetector2 markCSLI2;         // Checks LI cycle slips
                                          // markCSLI2.setSatThreshold(1);
+       // Checks Merbourne-Wubbena cycle slips
+        MWCSDetector  markCSMW(confReader->getValueAsDouble("MWNumLambdas"));          
 
-        MWCSDetector  markCSMW(confReader->getValueAsDouble("MWNumLambdas"));          // Checks Merbourne-Wubbena cycle slips
-
-                                                                                      // Object to keep track of satellite arcs
+        // Object to keep track of satellite arcs
         SatArcMarker markArc;
         markArc.setDeleteUnstableSats(true);
         markArc.setUnstablePeriod(61.0);
@@ -225,8 +225,8 @@ namespace POD
             Rinex3ObsHeader roh;
             Rinex3ObsData rod;
 
-            //read the header
             auto it = apprPos.begin();
+            //read the header
             rin >> roh;
 
             // Loop over all data epochs
@@ -414,8 +414,8 @@ namespace POD
 
         cout << "solverType " << solverPR->getName() << endl;
 
-        solverPR->maskEl = maskEl;
-        solverPR->maskSNR = maskSNR;
+        solverPR->maskEl = 5;
+        solverPR->maskSNR = 1;
         solverPR->ionoType = (PRIonoCorrType)confReader->fetchListValueAsInt("PRionoCorrType");
 
         ofstream os;
