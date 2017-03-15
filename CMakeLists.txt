@@ -161,6 +161,7 @@ if( BUILD_EXT )
 endif()
 	
 if( BUILD_MY )
+  add_subdirectory( SOFA )
   add_subdirectory( POD )
 endif()
 #----------------------------------------
