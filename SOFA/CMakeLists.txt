@@ -1,7 +1,5 @@
-# POD/CMakeLists.txt
+# SOFA/CMakeLists.txt
 include_directories(headers)
 file( GLOB_RECURSE MY_SOURCE_FILES "sources/*.cpp" "sources/*.c" )
 file( GLOB_RECURSE MY_INC_FILES "headers/*.h" "headers/*.hpp" )
-add_executable(POD ${MY_SOURCE_FILES} ${MY_INC_FILES})
-target_link_libraries(POD  gpstk)
-target_link_libraries(POD  SOFA)
+add_library(SOFA ${MY_SOURCE_FILES} ${MY_INC_FILES})
