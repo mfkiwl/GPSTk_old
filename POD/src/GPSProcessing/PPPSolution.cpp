@@ -1,4 +1,4 @@
-#include "..\headers\PPPSolution.h"
+#include "PPPSolution.h"
 namespace POD
 {
     PPPSolution::PPPSolution(ConfDataReader & confReader)
