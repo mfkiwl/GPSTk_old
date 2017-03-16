@@ -24,7 +24,7 @@ namespace POD
         EOPDataStore eopData;
 		
     private:
-       
+		static CivilTime toTAI(const CommonTime & t) throw(InvalidParameter);
     };
 }
 #endif // !EARTH_ROTATION_HPP

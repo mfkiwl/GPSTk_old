@@ -5,7 +5,7 @@
 #include"SatOrbitPropagator.hpp"
 #include"IERS.hpp"
 
-using namespace gpstk;
+//using namespace gpstk;
 
 namespace POD
 {
@@ -16,7 +16,6 @@ namespace POD
     void OrbitSim:: runTest()
     {
 
-        IERS::loadIGSFile("ERP\\COD17252.ERP");
 
         ofstream os("Integr_test.out");
 
