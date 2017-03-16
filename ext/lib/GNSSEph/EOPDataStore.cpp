@@ -255,6 +255,24 @@ namespace gpstk
 
       fstk.close();
    }
+   /** Add EOPs to the store via EOPSouces format provider file.
+
+   */
+   void EOPDataStore:: loadFile(const std::string & file, EOPSource source)
+       throw(FileMissingException, InvalidRequest)
+   {
+       switch (source)
+       {
+       case EOPSource::IERS: loadIERSFile(file);
+           break;
+       case EOPSource::IGS: loadIGSFile(file);
+           break;
+       case EOPSource::STK: loadSTKFile(file);
+           break;
+       default:
+           throw InvalidRequest("Unknowh EOP file format");
+       }
+   }
 
    ostream& operator<<(std::ostream& os, const EOPDataStore::EOPData& d)
    {
