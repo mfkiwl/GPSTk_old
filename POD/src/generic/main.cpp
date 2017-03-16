@@ -1,5 +1,5 @@
 #include "Solution.h"
-#include"SatOrbitPropagator2.hpp"
+
 int main(int argc, char *argv[])
 {
     //POD:: Solution sol(argv[1]);
