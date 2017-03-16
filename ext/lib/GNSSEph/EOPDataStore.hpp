@@ -68,15 +68,20 @@ namespace gpstk
       {
          double xp;        /// arcseconds
          double yp;        /// arcseconds
+
          double UT1mUTC;   /// seconds
+
          double dPsi;      /// arcseconds
          double dEps;      /// arcseconds
-         
-         EOPData() : xp(0.0), yp(0.0), UT1mUTC(0.0),dPsi(0.0), dEps(0.0)
+
+         double dX;        /// arcseconds
+         double dY;        /// arcseconds
+
+         EOPData() : xp(0.0), yp(0.0), UT1mUTC(0.0), dPsi(0.0), dEps(0.0), dX(0.0), dY(0.0)
          {}
 
-         EOPData(double x, double y, double ut1_utc, double dpsi = 0.0, double deps = 0.0) 
-            : xp(x), yp(y), UT1mUTC(ut1_utc), dPsi(dpsi), dEps(deps)
+         EOPData(double x, double y, double ut1_utc, double dpsi = 0.0, double deps = 0.0, double dx = 0.0, double dy = 0.0)
+            : xp(x), yp(y), UT1mUTC(ut1_utc), dPsi(dpsi), dEps(deps), dX(dx), dY(dy)
          {}
       } EOPData;
 
@@ -116,7 +121,8 @@ namespace gpstk
       /** Add EOPs to the store via EOPSouces format provider file.
       
       */
-      void loadFile(const std::string & file, EOPSource source) throw(FileMissingException, InvalidRequest);
+      void loadFile(const std::string & file, EOPSource source) 
+          throw(FileMissingException, InvalidRequest);
    protected:
 
 

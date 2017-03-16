@@ -62,7 +62,7 @@ namespace POD
 
             dPsi *= 1e-6;
             dEps *= 1e-6;
-
-            addEOPData(MJD(mjd, TimeSystem::UTC), EOPData(xp, yp, UT1mUTC, dPsi, dEps));
+            
+            addEOPData(MJD(mjd, TimeSystem::UTC), EOPData(xp, yp, UT1mUTC,0,0, dPsi, dEps));
     }
 }
