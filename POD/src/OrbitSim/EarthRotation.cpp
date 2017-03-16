@@ -2,6 +2,7 @@
 #include"stdafx.h"
 #include"EarthRotation.h"
 #include"EOPDataStore.hpp"
+#include"sofa.h"
 
 using namespace gpstk;
 using namespace std;
@@ -34,10 +35,10 @@ namespace POD
 		double djmjd0, date, dat;
 
 		//first, let's convert to TT;
-		CivilTime ct = toTAI(t);
+		CivilTime ct_TAI = toTAI(t);
 		//convert TT to MJD and MJD0
-		iauCal2jd(ct.year, ct.month, ct.day, &djmjd0, &date);
-		double timeTAI = (60.0*(double)(60 * ct.hour + ct.minute) + ct.second) / DAYSEC;
+		iauCal2jd(ct_TAI.year, ct_TAI.month, ct_TAI.day, &djmjd0, &date);
+		double timeTAI = (60.0*(double)(60 * ct_TAI.hour + ct_TAI.minute) + ct_TAI.second) / DAYSEC;
 		
 		double tai = date + timeTAI;
 		double tt = tai + 32.184 / DAYSEC;
@@ -52,9 +53,10 @@ namespace POD
 		
 		iauDat(iy, im, id, timeUTC, &dat);
 		
-		CommonTime tUTC = (CommonTime)timeTAI;
+		CommonTime tUTC = (CommonTime)ct_TAI;
 		tUTC.addSeconds(-dat);
-		
+        tUTC.setTimeSystem(TimeSystem::UTC);
+
 		//let's interpolate EOP
 		EOPDataStore:: EOPData eop = eopData.getEOPData(tUTC);
 
@@ -63,8 +65,7 @@ namespace POD
 		iauXys00a(djmjd0, tt, &x, &y, &s);
 
 		/* Add CIP corrections. */
-
-		x += eop.dX*DMAS2R;
+        x += eop.dX*DMAS2R;
 	    y += eop.dY*DMAS2R;
 
 		/* GCRS to CIRS matrix. */
@@ -85,8 +86,7 @@ namespace POD
 
 		double xp = eop.xp*DMAS2R;
 		double yp = eop.yp*DMAS2R;
-
-
+        
 		/* Polar motion matrix (TIRS->ITRS, IERS 2003). */
 		double rpom[3][3];
 		iauPom00(xp, yp, iauSp00(djmjd0, tt), rpom);
@@ -100,6 +100,7 @@ namespace POD
 			{
 				J2k2ECEF(i, j) = rc2it[i][j];
 			}
+
 		return J2k2ECEF;
     }
     
@@ -109,7 +110,6 @@ namespace POD
 	}
 	 CivilTime EarthRotation::toTAI(const CommonTime & t)
 	{
-	
 		TimeSystem inTS = t.getTimeSystem();
 		if (inTS == TimeSystem::Any || inTS == TimeSystem::Unknown) 
 			throw InvalidParameter("TimeSystem is invalid (Any or Unknown)");
@@ -123,4 +123,4 @@ namespace POD
 		return (CivilTime)TAI;
 	}
 
-}
+};

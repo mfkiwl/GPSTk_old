@@ -14,7 +14,6 @@ namespace POD
     protected:
         EarthRotation erp;
 
-
     public:
 
 
