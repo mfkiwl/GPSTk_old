@@ -57,7 +57,13 @@ namespace gpstk
    class EOPDataStore : public EpochDataStore
    {
    public:
-     
+       enum EOPSource
+       {
+           Unknown = 0,
+           IERS,
+           IGS,
+           STK
+       };
       typedef struct EOPData
       {
          double xp;        /// arcseconds
@@ -107,7 +113,10 @@ namespace gpstk
           */
       void loadSTKFile(std::string stkFile)
          throw(FileMissingException);
-
+      /** Add EOPs to the store via EOPSouces format provider file.
+      
+      */
+      void loadFile(const std::string & file, EOPSource source) throw(FileMissingException, InvalidRequest);
    protected:
 
 
