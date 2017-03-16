@@ -2,7 +2,6 @@
 #define EARTH_ROTATION_HPP
 
 #include"stdafx.h"
-#include"sofa.h"
 using namespace gpstk;
 using namespace std;
 
