@@ -112,14 +112,14 @@ namespace gpstk
          double mjd = StringUtils::asDouble(line.substr(7,8));      
          double xp = StringUtils::asDouble(line.substr(18,9));      // arcseconds
          double yp = StringUtils::asDouble(line.substr(37,9));      // arcseconds
-         double UT1mUTC = StringUtils::asDouble(line.substr(58,10));// arcseconds
+         double UT1mUTC = StringUtils::asDouble(line.substr(58,10));// time seconds
          
          double dPsi(0.0), dEps(0.0),dX(0.0), dY(0.0);
             
 		 if (line.size() >= 185)
 		 {
 			 dX = StringUtils::asDouble(line.substr(97, 9)) / 1000.0;   //
-			 dY = StringUtils::asDouble(line.substr(125, 9)) / 1000.0;   //
+			 dY = StringUtils::asDouble(line.substr(116, 9)) / 1000.0;   //
 			 dPsi = StringUtils::asDouble(line.substr(165, 10)) / 1000.0;   //
 			 dEps = StringUtils::asDouble(line.substr(175, 10)) / 1000.0;   // 
 

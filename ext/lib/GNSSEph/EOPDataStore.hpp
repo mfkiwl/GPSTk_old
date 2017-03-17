@@ -88,7 +88,8 @@ namespace gpstk
          /// Default constructor
       EOPDataStore() : EpochDataStore(2)
       {}
-
+      EOPDataStore(int numpoints) : EpochDataStore(numpoints)
+      {}
          /// Default deconstructor
       virtual ~EOPDataStore() {}
       
