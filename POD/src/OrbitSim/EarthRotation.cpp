@@ -9,9 +9,8 @@ using namespace std;
 
 namespace POD
 {
-    EarthRotation::EarthRotation()
+    EarthRotation::EarthRotation():eopData(10)
     {
-
     }
     EarthRotation::EarthRotation(const EOPDataStore & eop): eopData(eop)
     {
@@ -32,11 +31,11 @@ namespace POD
 	
     Matrix<double> EarthRotation::getJ2k2ECEF(const CommonTime & t)
     {
-		double djmjd0, date, dat;
-
-		//first, let's convert to TT;
+		//first, let's convert input time to TT;
 		CivilTime ct_TAI = toTAI(t);
+
 		//convert TT to MJD and MJD0
+        double djmjd0, date;
 		iauCal2jd(ct_TAI.year, ct_TAI.month, ct_TAI.day, &djmjd0, &date);
 		double timeTAI = (60.0*(double)(60 * ct_TAI.hour + ct_TAI.minute) + ct_TAI.second) / DAYSEC;
 		
@@ -50,7 +49,8 @@ namespace POD
 		int iy, im, id;
 		double timeUTC;
 		iauJd2cal(utc1, utc2, &iy, &im, &id, &timeUTC);
-		
+
+        double dat;
 		iauDat(iy, im, id, timeUTC, &dat);
 		
 		CommonTime tUTC = (CommonTime)ct_TAI;
@@ -59,6 +59,15 @@ namespace POD
 
 		//let's interpolate EOP
 		EOPDataStore:: EOPData eop = eopData.getEOPData(tUTC);
+        
+        //
+        //EOP data from SOFA cookbook
+        //
+        //eop.xp = 0.0349282;
+        //eop.yp = 0.4833163;
+        //eop.UT1mUTC = -0.072073685;
+        //eop.dX = 0.1725;
+        //eop.dY = -0.2650;
 
 		double x, y, s;
 		/* CIP and CIO, IAU 2000A. */
@@ -84,8 +93,8 @@ namespace POD
 		iauCr(rc2i, rc2ti);
 		iauRz(era, rc2ti);
 
-		double xp = eop.xp*DMAS2R;
-		double yp = eop.yp*DMAS2R;
+		double xp = eop.xp*DAS2R;
+		double yp = eop.yp*DAS2R;
         
 		/* Polar motion matrix (TIRS->ITRS, IERS 2003). */
 		double rpom[3][3];
@@ -108,6 +117,16 @@ namespace POD
 	{
 		return transpose(getJ2k2ECEF(t));
 	}
+
+    Vector<double> EarthRotation:: J2k_2_ECEF(const CommonTime & t, const Vector<double> pos)
+    {
+        return getJ2k2ECEF(t)*pos;
+    }
+
+    Vector<double> EarthRotation:: ECEF_2_J2k(const CommonTime & t, const Vector<double> pos)
+    {
+        return getECEF2J2k(t)*pos;
+    }
 	 CivilTime EarthRotation::toTAI(const CommonTime & t)
 	{
 		TimeSystem inTS = t.getTimeSystem();
@@ -122,5 +141,36 @@ namespace POD
 		
 		return (CivilTime)TAI;
 	}
+
+     bool EarthRotation::test()
+     {
+         ofstream os("EarthRotation_test.txt");
+         int iy, im, id, ih, min, j;
+         double sec, djmjd0, date, time, dat;
+        
+         /* UTC. */
+         iy = 2007;
+         im = 4;
+         id = 5;
+         ih = 12;
+         min = 0;
+         sec = 0.0;
+
+         j = iauCal2jd(iy, im, id, &djmjd0, &date);
+         if (j < 0) return j;
+         time = (60.0*(double)(60 * ih + min) + sec) / DAYSEC;
+         double utc = date + time;
+         j = iauDat(iy, im, id, time, &dat);
+         if (j < 0) return j;
+         double  tai = utc + dat / DAYSEC;
+         CivilTime ctTAI(iy, im, id, ih, min, sec, TimeSystem::TAI);
+
+         CommonTime TAI = (CommonTime)ctTAI;
+         TAI = TAI.addSeconds(dat);
+
+         Matrix<double>J2k2ECEF = getJ2k2ECEF(TAI);
+
+         os << setprecision(18) << J2k2ECEF <<endl;
+     }
 
 };
