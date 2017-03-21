@@ -11,10 +11,24 @@ namespace POD
 {
     class OrbitSim
     {
+    private:
+        RungeKuttaFehlberg rkfIntegrator;
+        SatOrbit defOrbitModel;
+
     protected:
         EarthRotation erp;
 
+        /// Pointer to an ode solver default is RungeKutta78
+        Integrator*   pIntegrator;
+
+        /// Pointer to the Equation Of Motion of a satellite
+        SatOrbit*   pOrbit;
+
     public:
+
+        void IntegrateTo(const CommonTime & te);
+        
+        void IntegrateTo(const double & dt);
 
 
         //   void test();
