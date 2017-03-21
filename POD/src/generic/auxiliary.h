@@ -1,5 +1,5 @@
-#ifndef AUXILIARY
-#define AUXILIARY
+#ifndef POD_AUXILIARY_H
+#define POD_AUXILIARY_H
 
 #include<string>
 #include<list>
@@ -13,5 +13,5 @@ namespace POD
 
     };
 }
-#endif // ! AUXILIARY
+#endif // ! POD_AUXILIARY_H
 

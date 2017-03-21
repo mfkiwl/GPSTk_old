@@ -1,5 +1,5 @@
-#ifndef PPP_SOLVER_LEO
-#define PPP_SOLVER_LEO
+#ifndef POD_PPP_SOLVER_LEO_H
+#define POD_PPP_SOLVER_LEO_H
 
 #include "stdafx.h"
 using namespace gpstk;
@@ -449,5 +449,5 @@ namespace POD
     }; // End of class 'SolverPPP'
 }
    //@}
-#endif // !PPP_SOLVER_LEO
+#endif // !POD_PPP_SOLVER_LEO_H
 

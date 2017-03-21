@@ -10,9 +10,6 @@
 namespace POD
 {
 
-
-
-
     void OrbitSim:: runTest()
     {
 

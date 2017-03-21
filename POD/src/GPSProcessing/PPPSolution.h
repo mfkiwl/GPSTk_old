@@ -1,5 +1,5 @@
-#ifndef PPP_SOLUTION
-#define PPP_SOLUTION
+#ifndef POD_PPP_SOLUTION_H
+#define POD_PPP_SOLUTION_H
 
 #include "stdafx.h"
 using namespace gpstk;
@@ -19,4 +19,4 @@ namespace POD
     };
 }
 
-#endif // !1
+#endif // !POD_PPP_SOLUTION_H

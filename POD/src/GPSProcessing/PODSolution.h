@@ -1,5 +1,5 @@
-#ifndef POD_SOLUTION
-#define POD_SOLUTION
+#ifndef POD_POD_SOLUTION_H
+#define POD_POD_SOLUTION_H
 
 #include "stdafx.h"
 using namespace gpstk;
@@ -18,4 +18,4 @@ namespace POD
 }
 
 
-#endif // !1
+#endif // !POD_POD_SOLUTION_H

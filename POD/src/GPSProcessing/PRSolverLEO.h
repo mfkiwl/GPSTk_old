@@ -1,5 +1,5 @@
-#ifndef PR_SOLVER_LEO
-#define PR_SOLVER_LEO
+#ifndef POD_PR_SOLVER_LEO_H
+#define POD_PR_SOLVER_LEO_H
 
 #include"stdafx.h"
 #include"PRSolverBase.h"
@@ -38,4 +38,4 @@ namespace POD
 
     };
 }
-#endif // !PR_SOLVER_LEO
+#endif // !POD_PR_SOLVER_LEO_H
