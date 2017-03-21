@@ -1,6 +1,6 @@
-
-#include"stdafx.h"
 #include"PRSolverBase.h"
+#include<math.h>
+#include"Matrix.hpp"
 namespace POD
 {
     double PRSolverBase::eps = 1e-4;

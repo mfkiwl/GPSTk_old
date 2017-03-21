@@ -1,4 +1,77 @@
 #include "PPPSolution.h"
+
+#include"PRSolver.h"
+
+//ephemerides store
+#include"SP3EphemerisStore.hpp"
+//
+#include"XYZ2NEU.hpp"
+#include"RequireObservables.hpp"
+//
+#include"SimpleFilter.hpp"
+// Class to detect cycle slips using LI combination
+#include "LICSDetector2.hpp"
+
+// Class to detect cycle slips using the Melbourne-Wubbena combination
+#include "MWCSDetector.hpp"
+
+// Class to compute the effect of solid tides
+#include "SolidTides.hpp"
+
+// Class to compute the effect of ocean loading
+#include "OceanLoading.hpp"
+
+// Class to compute the effect of pole tides
+#include "PoleTides.hpp"
+
+// Class to correct observables
+#include "CorrectObservables.hpp"
+
+// Class to compute the effect of wind-up
+#include "ComputeWindUp.hpp"
+
+// Class to compute the effect of satellite antenna phase center
+#include "ComputeSatPCenter.hpp"
+
+// Class to compute the tropospheric data
+#include "ComputeTropModel.hpp"
+
+// Class to compute linear combinations
+#include "ComputeLinear.hpp"
+
+// This class pre-defines several handy linear combinations
+#include "LinearCombinations.hpp"
+
+// Class to compute Dilution Of Precision values
+#include "ComputeDOP.hpp"
+
+// Class to keep track of satellite arcs
+#include "SatArcMarker.hpp"
+
+// Class to compute gravitational delays
+#include "GravitationalDelay.hpp"
+
+// Class to align phases with code measurements
+#include "PhaseCodeAlignment.hpp"
+
+// Compute statistical data
+#include "PowerSum.hpp"
+
+// Used to delete satellites in eclipse
+#include "EclipsedSatFilter.hpp"
+
+// Used to decimate data. This is important because RINEX observation
+// data is provided with a 30 s sample rate, whereas SP3 files provide
+// satellite clock information with a 900 s sample rate.
+#include "Decimate.hpp"
+
+
+#include "SolverPPP.hpp"
+#include"SolverPPPFB.hpp"
+#include"ProcessingList.hpp"
+
+#include"BasicModel.hpp"
+
 namespace POD
 {
     PPPSolution::PPPSolution(ConfDataReader & confReader)

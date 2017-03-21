@@ -1,9 +1,18 @@
-#include"stdafx.h"
 #include"PPPSolutionBase.h"
+
 #include<list>
 #include <direct.h>
 #include<windows.h>
 #include<regex>
+
+#include"PPPSolution.h"
+#include"PODSolution.h"
+#include"auxiliary.h"
+
+#include "Rinex3NavHeader.hpp"
+#include "Rinex3NavData.hpp"
+#include "Rinex3NavStream.hpp"
+
 #define DBG
 namespace POD
 {

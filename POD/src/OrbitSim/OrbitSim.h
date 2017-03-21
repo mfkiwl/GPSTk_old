@@ -1,7 +1,7 @@
 #ifndef POD_ORBIT_SIM_H
 #define POD_ORBIT_SIM_H
 
-#include"stdafx.h"
+
 #include"EOPDataStore.hpp"
 #include"EarthRotation.h"
 #include"SatOrbit.hpp"

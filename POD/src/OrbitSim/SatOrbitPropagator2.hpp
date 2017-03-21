@@ -42,7 +42,6 @@
 
 #ifndef GPSTK_SAT_ORBIT_PROPAGATOR2_HPP
 #define GPSTK_SAT_ORBIT_PROPAGATOR2_HPP
-#include"stdafx.h"
 #include <iostream>
 #include <string>
 

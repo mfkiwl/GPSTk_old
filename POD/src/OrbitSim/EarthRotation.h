@@ -1,7 +1,10 @@
 #ifndef POD_EARTH_ROTATION_HPP
 #define POD_EARTH_ROTATION_HPP
 
-#include"stdafx.h"
+#include"EOPDataStore.hpp"
+#include"Matrix.hpp"
+#include"CivilTime.hpp"
+
 using namespace gpstk;
 using namespace std;
 

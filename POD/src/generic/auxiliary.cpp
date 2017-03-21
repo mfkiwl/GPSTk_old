@@ -1,6 +1,6 @@
+#include"auxiliary.h"
 #include<windows.h>
 #include <direct.h>
-#include"auxiliary.h"
 namespace POD
 {
     int  auxiliary::getAllFiles(string &subDir, list<string> &files)

@@ -1,7 +1,12 @@
 #ifndef POD_PR_SOLVER_BASE_H
 #define POD_PR_SOLVER_BASE_H
 
-#include"stdafx.h"
+#include"PowerSum.hpp"
+#include "Rinex3ObsData.hpp"
+#include "XvtStore.hpp"
+#include "GPSEllipsoid.hpp"
+#include"IonoModelStore.hpp"
+#include"Matrix.hpp"
 
 using namespace std;
 using namespace gpstk;

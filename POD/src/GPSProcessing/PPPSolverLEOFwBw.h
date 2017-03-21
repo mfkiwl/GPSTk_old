@@ -1,7 +1,6 @@
 #ifndef POD_PPP_SOLVER_LEOFWBW_H
 #define POD_PPP_SOLVER_LEOFWBW_H
 
-#include "stdafx.h"
 #include "PPPSolverLEO.h"
 using namespace gpstk;
 namespace POD
