@@ -1,5 +1,5 @@
-#ifndef PR_SOLVER_BASE
-#define PR_SOLVER_BASE
+#ifndef POD_PR_SOLVER_BASE_H
+#define POD_PR_SOLVER_BASE_H
 
 #include"stdafx.h"
 
@@ -89,4 +89,4 @@ namespace POD
     };
 }
 
-#endif // !PR_SOLVER_BASE
+#endif // !POD_PR_SOLVER_BASE_H

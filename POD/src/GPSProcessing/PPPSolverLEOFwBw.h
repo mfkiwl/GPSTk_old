@@ -1,5 +1,5 @@
-#ifndef PPP_SOLVER_LEOFWBW
-#define PPP_SOLVER_LEOFWBW
+#ifndef POD_PPP_SOLVER_LEOFWBW_H
+#define POD_PPP_SOLVER_LEOFWBW_H
 
 #include "stdafx.h"
 #include "PPPSolverLEO.h"
@@ -249,4 +249,4 @@ namespace POD
 }
    //@}
 
-#endif //!PPP_SOLVER_LEOFWBW
+#endif //!POD_PPP_SOLVER_LEOFWBW_H

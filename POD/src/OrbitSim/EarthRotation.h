@@ -1,5 +1,5 @@
-#ifndef EARTH_ROTATION_HPP
-#define EARTH_ROTATION_HPP
+#ifndef POD_EARTH_ROTATION_HPP
+#define POD_EARTH_ROTATION_HPP
 
 #include"stdafx.h"
 using namespace gpstk;
@@ -33,4 +33,4 @@ namespace POD
 		static CivilTime toTAI(const CommonTime & t) throw(InvalidParameter);
     };
 }
-#endif // !EARTH_ROTATION_HPP
+#endif // !POD_EARTH_ROTATION_HPP

@@ -1,5 +1,5 @@
-#ifndef PPP_SOLUTION_BASE
-#define PPP_SOLUTION_BASE
+#ifndef POD_PPP_SOLUTION_BASE_H
+#define POD_PPP_SOLUTION_BASE_H
 
 
 #include "stdafx.h"
@@ -76,4 +76,4 @@ namespace POD
         map<CommonTime, Xvt, std::less<CommonTime>> apprPos;
     };
 }
-#endif // !1
+#endif // !POD_PPP_SOLUTION_BASE_H

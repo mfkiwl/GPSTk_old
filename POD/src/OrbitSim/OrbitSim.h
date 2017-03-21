@@ -1,9 +1,12 @@
-#ifndef ORBIT_SIM_HPP
-#define ORBIT_SIM_HPP
+#ifndef POD_ORBIT_SIM_H
+#define POD_ORBIT_SIM_H
 
 #include"stdafx.h"
 #include"EOPDataStore.hpp"
 #include"EarthRotation.h"
+#include"SatOrbit.hpp"
+#include"RungeKuttaFehlberg.hpp"
+#include"Integrator.hpp"
 
 using namespace gpstk;
 
@@ -37,5 +40,5 @@ namespace POD
     };
 }
 
-#endif // !ORBIT_SIM_HPP
+#endif // !POD_ORBIT_SIM_H
 
