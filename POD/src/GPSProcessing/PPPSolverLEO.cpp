@@ -1,5 +1,4 @@
-#include"stdafx.h"
-#include"PPPSolverLEO.h"
+
 //============================================================================
 //
 //  This file is part of GPSTk, the GPS Toolkit.
@@ -43,8 +42,6 @@
 */
 
 #include "PPPSolverLEO.h"
-#include "MatrixFunctors.hpp"
-#include<iostream>
 
 namespace POD
 {

@@ -1,7 +1,10 @@
 #ifndef POD_PPP_SOLUTION_H
 #define POD_PPP_SOLUTION_H
 
-#include "stdafx.h"
+#include"ConfDataReader.hpp"
+#include "PPPSolutionBase.h"
+#include"TropModel.hpp"
+
 using namespace gpstk;
 namespace POD
 {

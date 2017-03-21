@@ -2,8 +2,12 @@
 #define POD_PPP_SOLUTION_BASE_H
 
 
-#include "stdafx.h"
+#include"SolverWMS.hpp"
 #include"PRSolverLEO.h"
+#include "ComputeDOP.hpp"
+#include"SP3EphemerisStore.hpp"
+#include"ConfDataReader.hpp"
+
 using namespace gpstk;
 namespace POD
 {

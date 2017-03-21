@@ -1,10 +1,13 @@
 #ifndef POD_PR_SOLVER_H
 #define POD_PR_SOLVER_H
 
-#include"stdafx.h"
+#include"TropModel.hpp"
+#include"PRSolverBase.h"
+#include"IonoModelStore.hpp"
 
 using namespace std;
 using namespace gpstk;
+
 namespace POD
 {
     class PRSolver : public PRSolverBase

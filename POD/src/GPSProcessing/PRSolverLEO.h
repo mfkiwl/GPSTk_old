@@ -1,9 +1,10 @@
 #ifndef POD_PR_SOLVER_LEO_H
 #define POD_PR_SOLVER_LEO_H
 
-#include"stdafx.h"
 #include"PRSolverBase.h"
+#include"IonoModelStore.hpp"
 using namespace gpstk;
+
 namespace POD
 {
 

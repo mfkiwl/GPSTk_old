@@ -1,6 +1,6 @@
 #ifndef POD_ORBIT_MODEL_H
 #define POD_ORBIT_MODEL_H
-#include"stdafx.h"
+#include"EarthRotation.h"
 #include"ForceModelList.hpp"
 #include"EquationOfMotion.hpp"
 

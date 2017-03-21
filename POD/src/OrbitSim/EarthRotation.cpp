@@ -1,5 +1,4 @@
 
-#include"stdafx.h"
 #include"EarthRotation.h"
 #include"EOPDataStore.hpp"
 #include"sofa.h"

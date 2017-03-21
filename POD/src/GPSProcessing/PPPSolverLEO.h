@@ -1,8 +1,15 @@
 #ifndef POD_PPP_SOLVER_LEO_H
 #define POD_PPP_SOLVER_LEO_H
 
-#include "stdafx.h"
+#include "CodeKalmanSolver.hpp"
+#include"ComputeDOP.hpp"
+#include"PowerSum.hpp"
+#include"Position.hpp"
+
+#include<iostream>
+
 using namespace gpstk;
+using namespace std;
 /**
 * This class computes the Precise Point Positioning (PPP) solution  
 * GPS reseiver located on  LEO satellite  using a Kalman solver that 
