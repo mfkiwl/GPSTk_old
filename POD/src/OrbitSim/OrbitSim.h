@@ -15,12 +15,12 @@ namespace POD
     class OrbitSim
     {
     private:
+
         RungeKuttaFehlberg rkfIntegrator;
         SatOrbit defOrbitModel;
 
     protected:
-        EarthRotation erp;
-
+  
         /// Pointer to an ode solver default is RungeKutta78
         Integrator*   pIntegrator;
 
@@ -28,6 +28,8 @@ namespace POD
         SatOrbit*   pOrbit;
 
     public:
+
+        static  EarthRotation erp;
 
         void IntegrateTo(const CommonTime & te);
         
