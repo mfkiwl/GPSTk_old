@@ -73,7 +73,7 @@ namespace gpstk
       {
          (*it)->doCompute(utc,bref,sc);
 
-         a      += (*it)->getAccel();
+         a       += (*it)->getAccel();
          da_dr   += (*it)->partialR();
          da_dv   += (*it)->partialV();
             //da_dp   += (*it)->partialP();

@@ -10,7 +10,6 @@ using namespace std;
 
 namespace POD
 {
-
     class EarthRotation
 	{
     public:
