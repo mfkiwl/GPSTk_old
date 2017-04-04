@@ -370,7 +370,7 @@ namespace gpstk
    // alias for operator<<
    Vector& concatenate(const Vector& b)
    {
-      (*$self) << b;
+     return (*$self) << b;
    }
 
    std::string __str__() {

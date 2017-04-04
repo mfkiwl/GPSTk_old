@@ -76,7 +76,7 @@ namespace POD
          /// We declare a pure virtual function
       virtual void initialize() {};
 
-      bool loadModel(const std :: string &path);
+      void loadModel(const std :: string &path);
    
          /** Computes the acceleration due to gravity in m/s^2.
           * @param r ECI position vector.
