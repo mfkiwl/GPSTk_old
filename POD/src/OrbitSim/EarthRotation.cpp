@@ -28,7 +28,7 @@ namespace POD
 		return true;
     }
 	
-    Matrix<double> EarthRotation::getJ2k2ECEF(const CommonTime & t)
+    Matrix<double> EarthRotation::getJ2k2Ecef00(const CommonTime & t)
     {
 		//first, let's convert input time to TT;
 		CivilTime ct_TAI = toTAI(t);
@@ -112,19 +112,19 @@ namespace POD
 		return J2k2ECEF;
     }
     
-    Matrix<double> EarthRotation::getECEF2J2k(const CommonTime & t)
+    Matrix<double> EarthRotation::getEcef2J2k00(const CommonTime & t)
 	{
-		return transpose(getJ2k2ECEF(t));
+		return transpose(getJ2k2Ecef00(t));
 	}
 
-    Vector<double> EarthRotation:: J2k_2_ECEF(const CommonTime & t, const Vector<double> pos)
+    Vector<double> EarthRotation:: convertJ2k2Ecef(const CommonTime & t, const Vector<double> pos)
     {
-        return getJ2k2ECEF(t)*pos;
+        return getJ2k2Ecef00(t)*pos;
     }
 
-    Vector<double> EarthRotation:: ECEF_2_J2k(const CommonTime & t, const Vector<double> pos)
+    Vector<double> EarthRotation:: convertEcef2J2k(const CommonTime & t, const Vector<double> pos)
     {
-        return getECEF2J2k(t)*pos;
+        return getEcef2J2k00(t)*pos;
     }
 	 CivilTime EarthRotation::toTAI(const CommonTime & t)
 	{
@@ -167,7 +167,7 @@ namespace POD
          CommonTime TAI = (CommonTime)ctTAI;
          TAI = TAI.addSeconds(dat);
 
-         Matrix<double>J2k2ECEF = getJ2k2ECEF(TAI);
+         Matrix<double>J2k2ECEF = getJ2k2Ecef00(TAI);
 
          os << setprecision(18) << J2k2ECEF <<endl;
      }

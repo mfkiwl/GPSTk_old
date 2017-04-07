@@ -15,7 +15,6 @@ namespace POD
     class OrbitSim
     {
 
-
     public:
         
         ///
@@ -57,7 +56,6 @@ namespace POD
         {
             pOrbit = &defOrbitModel; return (*this);
         }
-
 
         /// set step size of the integrator
         OrbitSim& setStepSize(double step_size = 10.0)
