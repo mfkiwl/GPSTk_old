@@ -4,10 +4,6 @@
 #include"CentralMassModel.h"
 #include"SphericalHarmonicsModel.h"
 
-#include"SunForce.hpp"
-#include"MoonForce.hpp"
-
-#include"RelativityEffect.hpp"
 
 namespace POD
 {
@@ -24,7 +20,7 @@ namespace POD
 
         CommonTime tf = t0;
         tf += t;
-        return forceList.getDerivatives(tf,  sc);
+        return forceList.getDerivatives(tf, sc);
     }
 
     OrbitModel& OrbitModel::reset(const ForceModelData& fmc)
@@ -43,17 +39,17 @@ namespace POD
         else
             this->forceList.addForce(new SphericalHarmonicsModel(fmc.gData));
 
-        //sun gravity
-        if (fmc.useGravSun)
-            this->forceList.addForce(new SunForce());
+        ////sun gravity
+        //if (fmc.useGravSun)
+        //    this->forceList.addForce(new SunForce());
 
-        //moon gravity
-        if (fmc.useGravSun)
-            this->forceList.addForce(new MoonForce());
+        ////moon gravity
+        //if (fmc.useGravSun)
+        //    this->forceList.addForce(new MoonForce());
 
-        //relativity effects
-        if (fmc.useRelEffect)
-            this->forceList.addForce(new RelativityEffect());
+        ////relativity effects
+        //if (fmc.useRelEffect)
+        //    this->forceList.addForce(new RelativityEffect());
 
         return(*this);
 

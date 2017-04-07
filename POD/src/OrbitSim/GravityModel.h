@@ -6,7 +6,7 @@
 #ifndef POD_GRAVITY_MODEL_H
 #define POD_GRAVITY_MODEL_H
 #include"OrbitSim.h"
-#include "ForceModel.hpp"
+#include "Force.h"
 #include"ForceModelData.h"
 
 namespace POD
@@ -19,7 +19,7 @@ namespace POD
       /** This class computes the body fixed acceleration due to the harmonic 
        *  gravity field of the central body
        */
-   class GravityModel : public ForceModel
+   class GravityModel : public Force
    {
    public:
 
@@ -28,14 +28,6 @@ namespace POD
 
          /// Default destructor
       virtual ~GravityModel() {};
-
-         /** Call the relevant methods to compute the acceleration.
-          * @param utc Time reference class
-          * @param rb  Reference body class
-          * @param sc  Spacecraft parameters and state
-          * @return the acceleration [m/s^s]
-          */
-      virtual void doCompute(Epoch time, Spacecraft& sc) =0;
 
          /// return the force model index
       virtual int forceIndex() const

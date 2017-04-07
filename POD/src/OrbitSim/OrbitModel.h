@@ -5,7 +5,7 @@
 
 #include"ForceModelData.h"
 
-#include"ForceModelList.hpp"
+#include"ForceList.h"
 #include"EquationOfMotion.hpp"
 
 
@@ -31,14 +31,14 @@ namespace POD
         OrbitModel& reset(const ForceModelData& fmc);
 
         /// set reference epoch
-        OrbitModel& setRefEpoch(const CommonTime & utc)
+        OrbitModel& setRefEpoch(const Epoch & t)
         {
-            t0 = utc; 
+            t0 = t; 
             return (*this);
         }
 
         /// get reference epoch
-        CommonTime getRefEpoch() const
+        Epoch getRefEpoch() const
         {
             return t0;
         }
@@ -47,13 +47,13 @@ namespace POD
     protected:
 
         /// Reference epoch
-        CommonTime t0;
+        Epoch t0;
 
         /// Spacecraft object
         Spacecraft sc;
 
         /// Force Model List
-        ForceModelList forceList;
+        ForceList forceList;
     };
 }
 #endif // !POD_ORBIT_MODEL_H
