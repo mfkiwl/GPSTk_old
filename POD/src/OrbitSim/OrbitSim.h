@@ -213,8 +213,6 @@ namespace POD
         Matrix<double> sMatrix;         // 6*np
 
 
-        std::set<ForceModel::ForceModelType> setFMT;
-
     };
 }
 

@@ -263,7 +263,7 @@ namespace POD
        * @param sc  Spacecraft parameters and state
        * @return the acceleration [m/s^s]
        */
-    void SphericalHarmonicsModel::doCompute(Epoch time, EarthBody& rb, Spacecraft& sc)
+    void SphericalHarmonicsModel::doCompute(Epoch time,  Spacecraft& sc)
     {
 
         //Matrix<double> C2T = ReferenceFrames::J2kToECEFMatrix(time);

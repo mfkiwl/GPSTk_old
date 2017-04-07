@@ -24,9 +24,7 @@ namespace POD
         setStepSize(1.0);
 
         setFMT.clear();
-        //setFMT.insert(ForceModel::Cd);
-        //setFMT.insert(ForceModel::Cr);
-        pOrbit->setForceModelType(setFMT);
+
 
 
 

@@ -12,7 +12,7 @@ namespace POD
     public:
         CentralMassModel(const GravityModelData &gMData);
 
-        void doCompute(Epoch time, EarthBody& rb, Spacecraft& sc);
+        void doCompute(Epoch time, Spacecraft& sc);
 
         virtual void test() {};
 
