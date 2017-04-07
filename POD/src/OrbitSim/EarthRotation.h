@@ -1,5 +1,5 @@
-#ifndef POD_EARTH_ROTATION_HPP
-#define POD_EARTH_ROTATION_HPP
+#ifndef POD_EARTH_ROTATION_H
+#define POD_EARTH_ROTATION_H
 
 #include"EOPDataStore.hpp"
 #include"Matrix.hpp"
@@ -18,10 +18,12 @@ namespace POD
         EarthRotation(const EOPDataStore & eop);
         bool loadEOP(const string &  file, EOPDataStore::EOPSource source= EOPDataStore::EOPSource::IERS)
             throw(InvalidRequest,FileMissingException);
-        Matrix<double> getJ2k2ECEF(const CommonTime & t);
-        Matrix<double> getECEF2J2k(const CommonTime & t);
-        Vector<double> J2k_2_ECEF(const CommonTime & t, const Vector<double> pos);
-        Vector<double> ECEF_2_J2k(const CommonTime & t, const Vector<double> pos);
+        /// get Inertial to terestriel matrix by IAU 2000A, CIO based, using classical angles
+        Matrix<double> getJ2k2Ecef00(const CommonTime & t);
+        Matrix<double> getEcef2J2k00(const CommonTime & t);
+        Vector<double> convertJ2k2Ecef(const CommonTime & t, const Vector<double> pos);
+        Vector<double> convertEcef2J2k(const CommonTime & t, const Vector<double> pos);
+
         virtual ~EarthRotation()
         {
             eopData.clear();
@@ -35,4 +37,4 @@ namespace POD
 		static CivilTime toTAI(const CommonTime & t) throw(InvalidParameter);
     };
 }
-#endif // !POD_EARTH_ROTATION_HPP
+#endif // !POD_EARTH_ROTATION_H

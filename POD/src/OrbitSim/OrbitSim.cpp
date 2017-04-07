@@ -263,7 +263,7 @@ namespace POD
         if (isJ2k)
             return rvVector;
         else
-            return OrbitSim::erp.J2k_2_ECEF(getCurTime(), rvVector);
+            return OrbitSim::erp.convertJ2k2Ecef(getCurTime(), rvVector);
     }  // End of method 'OrbitSim::rvState()'
 
 
@@ -416,6 +416,8 @@ namespace POD
         cout << OrbitSim::erp.loadEOP("finals2000A.data") << endl;
         OrbitSim op;
 
+        op.pOrbit->createFMObjects();
+        op.LoadGravityModel("GEN\\EGM2008_TideFree_nm150.txt");
         Vector<double> elts(6, 0.0);
         double T(5200.0), step ( 1.0), tt(86400.0*7);
 
@@ -426,11 +428,11 @@ namespace POD
         elts(4) = 3.0;                //omg, rad
         elts(4) = 0.0;                //omg, rad
         
-        CommonTime t0 =  (CommonTime)(CivilTime(2013, 01, 30, 0, 0, 0.0,TimeSystem::UTC));
-        // mu = 3.98600441500e+14;
-        Vector<double> sv = KeplerOrbit::State(3.98600441500e+14, elts, 0);
+        CommonTime t0 =  (CommonTime)(CivilTime(2013, 01, 30, 0, 0, 0.0,TimeSystem::TT));
+        double mu = 3.98600441500e+14;
+        Vector<double> sv = KeplerOrbit::State(mu, elts, 0);
 
-        op.setInitState(t0, sv);
+        op.setInitState(t0, sv); 
 
         os << fixed << setw(12) << setprecision(5);
         os << op.getCurTime() <<" "<< op.getCurState() <<endl;
@@ -447,7 +449,10 @@ namespace POD
             }
             t += step;
             if (fmod(t, T) == 0)
-                os << op.getCurTime() << " " << op.getCurState() << endl;
+            {
+                os << op.getCurTime() << " " << op.getCurState();
+
+            }
         }
         os.close();
     }
