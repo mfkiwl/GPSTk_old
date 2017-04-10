@@ -5,7 +5,6 @@
 
 #ifndef POD_GRAVITY_MODEL_H
 #define POD_GRAVITY_MODEL_H
-#include"OrbitSim.h"
 #include "Force.h"
 #include"ForceModelData.h"
 

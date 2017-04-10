@@ -1,6 +1,6 @@
 #ifndef POD_ORBIT_SIM_H
 #define POD_ORBIT_SIM_H
-#include"OrbitModel.h"
+
 
 #include"EOPDataStore.hpp"
 #include"EarthRotation.h"
@@ -8,10 +8,13 @@
 #include"RungeKuttaFehlberg.hpp"
 #include"Integrator.hpp"
 
+#include"OrbitModel.h"
 using namespace gpstk;
 
 namespace POD
 {
+    //typedef unique_ptr<Integrator> IntegratorUniqPtr;
+    //typedef unique_ptr<OrbitModel> OrbitModelUniqPtr;
     class OrbitSim
     {
 
@@ -34,14 +37,14 @@ namespace POD
         /// set integrator, default is Rungge-Kutta 78
         OrbitSim& setIntegrator(Integrator* pIntg)
         {
-            pIntegrator = pIntg; return (*this);
+            pIntegrator  pIntg; return (*this);
         }
 
 
         /// set the integrator to the default one
         OrbitSim& setDefaultIntegrator()
         {
-            pIntegrator = &rkfIntegrator; return (*this);
+            pIntegrator = srkfIntegrator; return (*this);
         }
 
         /// set equation of motion of the orbit
@@ -179,7 +182,7 @@ namespace POD
         Integrator*   pIntegrator;
 
         /// Pointer to the Equation Of Motion of a satellite
-        OrbitModel*   pOrbit;
+        OrbitModel*  pOrbit;
 
     private:
 
