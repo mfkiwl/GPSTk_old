@@ -1,4 +1,8 @@
 #include"ForceModelData.h"
+#include<iostream>
+
+using namespace std;
+
 namespace POD
 {
     ForceModelData::ForceModelData()
@@ -8,17 +12,6 @@ namespace POD
         useAtmDrag = false;
         useRelEffect = false;
         useSolarPressure = false;
-
-        solidTide = oceanTide = poleTide = false;
-
-        gravModelType = CENTRAL_MASS;
-
-        pGeoEarth = NULL;
-        pGeoSun = NULL;
-        pGeoMoon = NULL;
-        pAtmDrag = NULL;
-        pSolarPressure = NULL;
-        pRelEffect = NULL;
 
         gData = GravityModelData();
     }

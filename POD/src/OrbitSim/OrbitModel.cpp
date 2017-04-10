@@ -3,7 +3,7 @@
 #include"GravityModel.h"
 #include"CentralMassModel.h"
 #include"SphericalHarmonicsModel.h"
-
+#include"ForceList.h"
 
 namespace POD
 {
@@ -35,9 +35,9 @@ namespace POD
 
         // GeoEarth
         if (fmc.gData.desiredDegree<2)
-            this->forceList.addForce(new CentralMassModel(fmc.gData));
+            this->forceList.addForce(ForceUniquePtr(new  CentralMassModel(fmc.gData)));
         else
-            this->forceList.addForce(new SphericalHarmonicsModel(fmc.gData));
+            this->forceList.addForce(ForceUniquePtr(new  SphericalHarmonicsModel(fmc.gData)));
 
         ////sun gravity
         //if (fmc.useGravSun)

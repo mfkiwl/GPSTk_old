@@ -54,6 +54,7 @@
 
 namespace POD
 {
+    typedef std::unique_ptr<Force> ForceUniquePtr;
       /// @ingroup GeoDynamics 
       //@{
       
@@ -77,17 +78,9 @@ namespace POD
          * Adds a generic force to the list
          * @param f Object which implements the Force interface
          */
-      void addForce(std::unique_ptr<Force> pForce)
-      { forceList.push_back(pForce); };
+      void addForce(ForceUniquePtr pForce)
+      { forceList.push_back(std::move(pForce)); };
 
-
-         /**
-         * Remove a generic force to the list
-         * @param f Object which implements the Force interface
-         */
-      void removeForce(std::unique_ptr<Force> pForce)
-      { forceList.remove(pForce); }
-      
 
          /// interface implementation for the 'Force'
       virtual Vector<double> getDerivatives(const Epoch &t, Spacecraft& sc);
@@ -109,7 +102,8 @@ namespace POD
    protected:
 
          /// List of forces
-      std::list<std:: unique_ptr<Force> > forceList;
+
+      std::list<ForceUniquePtr> forceList;
 
 
    }; // End of class 'ForceList'

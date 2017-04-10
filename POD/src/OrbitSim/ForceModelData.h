@@ -1,8 +1,8 @@
 #ifndef POD_FORCE_MODEL_DATA_H
 #define POD_FORCE_MODEL_DATA_H
 
-#include"GravityModel.h"
 #include<string>
+#include"Matrix.hpp"
 
 namespace POD
 {
@@ -32,9 +32,9 @@ namespace POD
 		bool poleTide = false;
 
 		//for debug purposes only
-		Matrix<double> unnormalizedCS;
+		gpstk:: Matrix<double> unnormalizedCS;
 
-		Matrix<double> normalizedCS;
+        gpstk:: Matrix<double> normalizedCS;
 
 		bool isModelLoaded = false;
 
@@ -56,8 +56,6 @@ namespace POD
 
         GravityModelData gData;
     };
-
-  
 }
 
 #endif // !POD_FORCE_MODEL_DATA_H
