@@ -1,7 +1,6 @@
 #ifndef POD_SHERICAL_HARMONICS_MODEL_H
 #define POD_SHERICAL_HARMONICS_MODEL_H
 
-#include"OrbitSim.h"
 #include"ForceModel.hpp"
 #include "GravityModel.h"
 #include "EarthSolidTide.hpp"
@@ -44,7 +43,6 @@ namespace POD
         * @return the acceleration [m/s^s]
         */
         virtual void doCompute(Epoch time,  Spacecraft& sc) override;
-
 
         /// Return force model name
         virtual std::string modelName() const

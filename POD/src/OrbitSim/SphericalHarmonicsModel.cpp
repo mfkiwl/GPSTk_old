@@ -1,4 +1,5 @@
 #include"SphericalHarmonicsModel.h"
+#include"EarthRotation.h"
 
 namespace POD
 {
@@ -267,7 +268,7 @@ namespace POD
     {
 
         //Matrix<double> C2T = ReferenceFrames::J2kToECEFMatrix(time);
-        Matrix<double> C2T = OrbitSim::erp.getJ2k2Ecef00(time);
+        Matrix<double> C2T = EarthRotation::eopStore.getJ2k2Ecef00(time);
 
         /*
         // debuging
