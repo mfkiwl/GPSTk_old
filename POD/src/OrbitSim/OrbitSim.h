@@ -20,9 +20,6 @@ namespace POD
 
     public:
         
-        ///
-        static  EarthRotation erp;
-
         /// Default constructor
         OrbitSim();
 
@@ -37,14 +34,13 @@ namespace POD
         /// set integrator, default is Rungge-Kutta 78
         OrbitSim& setIntegrator(Integrator* pIntg)
         {
-            pIntegrator  pIntg; return (*this);
+            pIntegrator = pIntg; return (*this);
         }
-
 
         /// set the integrator to the default one
         OrbitSim& setDefaultIntegrator()
         {
-            pIntegrator = srkfIntegrator; return (*this);
+            pIntegrator = &rkfIntegrator; return (*this);
         }
 
         /// set equation of motion of the orbit
@@ -99,7 +95,9 @@ namespace POD
         /// return the current epoch
         CommonTime getCurTime()
         {
-            CommonTime utc = pOrbit->getRefEpoch(); utc += curT; return utc;
+            CommonTime utc = pOrbit->getRefEpoch();
+            utc += curT; 
+            return utc;
         }
 
         /// return the current state

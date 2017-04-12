@@ -13,7 +13,8 @@ namespace POD
     class EarthRotation
 	{
     public:
-        
+        static  EarthRotation erp;
+
         EarthRotation();
         EarthRotation(const EOPDataStore & eop);
         bool loadEOP(const string &  file, EOPDataStore::EOPSource source= EOPDataStore::EOPSource::IERS)
