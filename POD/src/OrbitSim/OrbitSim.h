@@ -1,20 +1,20 @@
 #ifndef POD_ORBIT_SIM_H
 #define POD_ORBIT_SIM_H
+#include<memory>
 
-
-#include"EOPDataStore.hpp"
-#include"EarthRotation.h"
-#include"OrbitModel.h"
 #include"RungeKuttaFehlberg.hpp"
 #include"Integrator.hpp"
-
+#include"EarthRotation.h"
 #include"OrbitModel.h"
+
 using namespace gpstk;
+using namespace std;
 
 namespace POD
 {
-    //typedef unique_ptr<Integrator> IntegratorUniqPtr;
-    //typedef unique_ptr<OrbitModel> OrbitModelUniqPtr;
+    typedef unique_ptr<Integrator> IntegratorUniquePtr;
+    typedef unique_ptr<OrbitModel> OrbitModelUniquePtr;
+
     class OrbitSim
     {
 
@@ -34,32 +34,36 @@ namespace POD
         /// set integrator, default is Rungge-Kutta 78
         OrbitSim& setIntegrator(Integrator* pIntg)
         {
-            pIntegrator = pIntg; return (*this);
+            pIntegrator.reset(pIntg);
+            return (*this);
         }
 
         /// set the integrator to the default one
         OrbitSim& setDefaultIntegrator()
         {
-            pIntegrator = &rkfIntegrator; return (*this);
+            pIntegrator.reset(new RungeKuttaFehlberg);
+            return (*this);
         }
 
         /// set equation of motion of the orbit
         OrbitSim& setOrbit(OrbitModel* porbit)
         {
-            pOrbit = porbit; return (*this);
+            pOrbit.reset(porbit); 
+            return (*this);
         }
-
 
         /// set the orbit to the default one
         OrbitSim& setDefaultOrbit()
         {
-            pOrbit = &defOrbitModel; return (*this);
+            pOrbit.reset(new OrbitModel);
+            return (*this);
         }
 
         /// set step size of the integrator
         OrbitSim& setStepSize(double step_size = 10.0)
         {
-            pIntegrator->setStepSize(step_size); return (*this);
+            pIntegrator->setStepSize(step_size); 
+            return (*this);
         }
 
         /**set init state
@@ -112,12 +116,6 @@ namespace POD
             return (curState.size() - 42) / 6;
         }
 
-        /// get the pointer to the satellite orbit object
-        OrbitModel* getOrbitModelPointer()
-        {
-            return pOrbit;
-        }
-
         /// write curT curState to a file
         void writeToFile(std::ostream& s) const;
 
@@ -139,7 +137,7 @@ namespace POD
         //void IntegrateTo(const double & dt);
 
 
-          void test();
+        void test();
         static void runTest();
 
 
@@ -177,19 +175,14 @@ namespace POD
 
 
         /// Pointer to an ode solver default is RungeKutta78
-        Integrator*   pIntegrator;
+        IntegratorUniquePtr   pIntegrator;
 
         /// Pointer to the Equation Of Motion of a satellite
-        OrbitModel*  pOrbit;
+        OrbitModelUniquePtr  pOrbit;
 
     private:
 
-        /// The default integrator is RKF78
-        RungeKuttaFehlberg rkfIntegrator;
-
-        /// The default orbit is kepler orbit
-        OrbitModel  defOrbitModel;
-
+        static void testKepler();
         /// current time since reference epoch
         double curT;
 
@@ -212,7 +205,6 @@ namespace POD
 
         /// the sensitivity matrix 
         Matrix<double> sMatrix;         // 6*np
-
 
     };
 }

@@ -12,7 +12,7 @@ namespace POD
       // interface implementation for the 'ForceModel'
    Vector<double> ForceList::getDerivatives(const Epoch & t,  Spacecraft& sc)
    {
-	   const int np = 1; //= setFMT.size(); //getNP();
+	   const int np = 0; //= setFMT.size(); //getNP();
 
       a.resize(3,0.0);
       da_dr.resize(3,3,0.0);
@@ -85,7 +85,7 @@ namespace POD
       Vector<double> r = sc.R();
       Vector<double> v = sc.V();
       
-      gpstk::Vector<double> dy(42+6*np,0.0);   //////////////////////////////////////////////////////////////////////////
+      Vector<double> dy(42+6*np,0.0);   //////////////////////////////////////////////////////////////////////////
 
       dy(0) = v(0);      // v
       dy(1) = v(1);

@@ -1,32 +1,19 @@
 #include"OrbitSim.h"
 
 #include"KeplerOrbit.hpp"
-#include"SatOrbit.hpp"
-#include"SatOrbitPropagator.hpp"
-#include"IERS.hpp"
-#include"CivilTime.hpp"
-
 //using namespace gpstk;
 
 namespace POD
 {
-    EarthRotation  OrbitSim::erp;
-
 
     // Constructor
     OrbitSim::OrbitSim()
-        : pIntegrator(NULL),
+        : pIntegrator(),
         curT(0.0)
     {
         setDefaultIntegrator();
         setDefaultOrbit();
-
-        setStepSize(1.0);
-
-        setFMT.clear();
-
-
-
+        setStepSize(3.0);
 
     }  // End of constructor 'OrbitSim::OrbitSim()'
 
@@ -34,8 +21,8 @@ namespace POD
        // Default destructor
     OrbitSim::~OrbitSim()
     {
-        pIntegrator = NULL;
-        pOrbit = NULL;
+        pIntegrator.release();
+        pOrbit.release();
     }
 
     /* Take a single integration step.
@@ -50,7 +37,8 @@ namespace POD
         try
         {
             curT = tf;
-            curState = pIntegrator->integrateTo(t, y, pOrbit, tf);
+            EquationOfMotion *eq = pOrbit.get();
+            curState = pIntegrator->integrateTo(t, y, eq, tf);
 
             updateMatrix();
 
@@ -73,7 +61,8 @@ namespace POD
             Vector<double> y = curState;
 
             curT = tf;
-            curState = pIntegrator->integrateTo(t, y, pOrbit, tf);
+            EquationOfMotion *eq = pOrbit.get();
+            curState = pIntegrator->integrateTo(t, y, eq, tf);
 
             updateMatrix();
 
@@ -101,7 +90,7 @@ namespace POD
        */
     OrbitSim& OrbitSim::setInitState(CommonTime t0, Vector<double> rv0)
     {
-        const int np = setFMT.size();
+        const int np = 0; //= setFMT.size();
 
         curT = double(0.0);
         curState.resize(42 + 6 * np, 0.0);
@@ -126,7 +115,6 @@ namespace POD
 
         // set reference epoch
         setRefEpoch(t0);
-
 
         return (*this);
 
@@ -261,22 +249,21 @@ namespace POD
         if (isJ2k)
             return rvVector;
         else
-            return OrbitSim::erp.convertJ2k2Ecef(getCurTime(), rvVector);
+            return EarthRotation::eopStore.convertJ2k2Ecef(getCurTime(), rvVector);
     }  // End of method 'OrbitSim::rvState()'
 
 
        /// write curT curState to a file
     void OrbitSim::writeToFile(ostream& s) const
     {
-        CommonTime utcRef = pOrbit->getRefEpoch();
-        CommonTime utc = utcRef;
-        utc += curT;
+        Epoch utcRef = pOrbit->getRefEpoch();
+        utcRef += curT;
 
         const int np = getNP();
 
         s << fixed;
-        s << "#" << utc << " "
-            << setprecision(12) << (MJD)utc << endl;
+        s << "#" << utcRef << " "
+            << setprecision(12) << utcRef << endl;
 
         for (int i = 0; i<6; i++)
         {
@@ -318,7 +305,7 @@ namespace POD
         cout << fixed << setprecision(6);
 
         // load global data
-        IERS::loadSTKFile("ERP\\COD17252.ERP");
+      //  IERS::loadSTKFile("ERP\\COD17252.ERP");
         //ReferenceFrames::setJPLEphFile("InputData\\DE405\\jplde405");
 
         ofstream fout("outorbit.txt");
@@ -352,14 +339,10 @@ namespace POD
 
 
         Vector<double> kep(6, 0.0);
-        kep = KeplerOrbit::Elements(ASConstant::GM_Earth, yy0);
+      //  kep = KeplerOrbit::Elements(ASConstant::GM_Earth, yy0);
 
 
         OrbitSim op;
-
-        OrbitModel* porbit = op.getOrbitModelPointer();
-        porbit->enableGeopotential(OrbitModel::GM_JGM3, 1, 1);
-
 
         op.setRefEpoch(t0);
         op.setStepSize(10.0);
@@ -387,15 +370,15 @@ namespace POD
 
             Vector<double> yy_ref(6, 0.0);
             Matrix<double> phi_ref(6, 6, 0.0);
-            KeplerOrbit::TwoBody(ASConstant::GM_Earth, yy0, t + step, yy_ref, phi_ref);
-            Vector<double> checky0 = KeplerOrbit::State(ASConstant::GM_Earth, kep, t + step);
+         //   KeplerOrbit::TwoBody(ASConstant::GM_Earth, yy0, t + step, yy_ref, phi_ref);
+         //   Vector<double> checky0 = KeplerOrbit::State(ASConstant::GM_Earth, kep, t + step);
 
             Matrix<double> phi = op.transitionMatrix();
 
             Vector<double> diff = yy_out - yy_ref;
 
-            UTCTime utc = op.getCurTime();
-            cout << utc << " " << diff << endl;
+           // UTCTime utc = op.getCurTime();
+           // cout << utc << " " << diff << endl;
             cout << phi - phi_ref << endl;
 
             t += step;
@@ -408,35 +391,46 @@ namespace POD
 
     void OrbitSim:: runTest()
     {
+        cout << EarthRotation::eopStore.loadEOP("finals2000A.data") << endl;
+        cout << "ERP loading..."<<endl;
+        testKepler();
+
+    }
+    void OrbitSim::testKepler()
+    {
+        cout << "Test kepler motion" << endl;
+
         ofstream os("Integr_test.out");
 
-        cout << "ERP loading...";
-        cout << OrbitSim::erp.loadEOP("finals2000A.data") << endl;
         OrbitSim op;
+        ForceModelData fmd;
+        fmd.gData.loadModel("GEN\\EGM2008_TideFree_nm150.txt");
+        OrbitModel om(fmd);
 
-        op.pOrbit->createFMObjects();
-        op.LoadGravityModel("GEN\\EGM2008_TideFree_nm150.txt");
+        op.setOrbit(&om);
+
         Vector<double> elts(6, 0.0);
-        double T(5200.0), step ( 1.0), tt(86400.0*7);
+        double T(5200.0), step(5.0), tt(86400.0 * 7);
 
         elts(0) = 6487264.0502067700; //A, m
         elts(1) = 0.001;              //ecc
         elts(2) = 1.0;                //i, rad
         elts(3) = 2.0;                //OMG, rad
         elts(4) = 3.0;                //omg, rad
-        elts(4) = 0.0;                //omg, rad
-        
-        CommonTime t0 =  (CommonTime)(CivilTime(2013, 01, 30, 0, 0, 0.0,TimeSystem::TT));
+        elts(5) = 0.0;                //M, rad
+
+        CommonTime t0 = (CommonTime)(CivilTime(2013, 01, 30, 0, 0, 0.0, TimeSystem::TT));
         double mu = 3.98600441500e+14;
         Vector<double> sv = KeplerOrbit::State(mu, elts, 0);
 
-        op.setInitState(t0, sv); 
+        op.setInitState(t0, sv);
 
         os << fixed << setw(12) << setprecision(5);
-        os << op.getCurTime() <<" "<< op.getCurState() <<endl;
-        
+        os << op.getCurTime() << " " << op.getCurState() << endl;
+
         //
         double t = 0;
+        
         //
         while (t < tt)
         {
@@ -448,8 +442,7 @@ namespace POD
             t += step;
             if (fmod(t, T) == 0)
             {
-                os << op.getCurTime() << " " << op.getCurState();
-
+                os << op.getCurTime() << " " << op.getCurState() << endl;
             }
         }
         os.close();

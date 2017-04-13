@@ -15,6 +15,8 @@ namespace POD
     public:
 
         /// Default constructor
+        OrbitModel();
+
         OrbitModel(const ForceModelData& fmc);
 
         /// Default destructor
@@ -52,6 +54,7 @@ namespace POD
 
         /// Force Model List
         ForceList forceList;
+
     };
 }
 #endif // !POD_ORBIT_MODEL_H

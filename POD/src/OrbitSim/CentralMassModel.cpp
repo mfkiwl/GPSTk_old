@@ -17,7 +17,7 @@ namespace POD
        * @param sc  Spacecraft parameters and state
        * @return the acceleration [m/s^s]
        */
-    void CentralMassModel::doCompute(Epoch time, EarthBody& rb, Spacecraft& sc)
+    void CentralMassModel::doCompute(Epoch time,  Spacecraft& sc)
     {
         Vector<double> R = sc.R();
         double  r = sqrt(R(0)*R(0) + R(1)*R(1) + R(2)*R(2));
