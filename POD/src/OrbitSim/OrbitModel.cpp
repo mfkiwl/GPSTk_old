@@ -7,6 +7,9 @@
 
 namespace POD
 {
+    OrbitModel:: OrbitModel()
+    {
+    }
 
     OrbitModel::OrbitModel(const ForceModelData& fmc)
     {
@@ -22,9 +25,10 @@ namespace POD
         tf += t;
         return forceList.getDerivatives(tf, sc);
     }
-
+    
     OrbitModel& OrbitModel::reset(const ForceModelData& fmc)
     {
+
         this->forceList.clear();
 
         if (!fmc.gData.isModelLoaded)

@@ -78,7 +78,7 @@ namespace POD
             if (n == desiredDegree && m == desiredOrder) break;
 
         }
-        isModelLoaded = false;
+        isModelLoaded = true;
     }
 
 }

@@ -9,7 +9,7 @@ using namespace std;
 namespace POD
 {
     ///
-    EarthRotation EarthRotation::erp;
+    EarthRotation EarthRotation::eopStore;
 
     EarthRotation::EarthRotation():eopData(10)
     {

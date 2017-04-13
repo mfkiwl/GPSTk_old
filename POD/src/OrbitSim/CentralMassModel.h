@@ -17,7 +17,6 @@ namespace POD
         virtual void test() {};
 
     };
-
 }
 
 #endif //!POD_CENTRAL_MASS_MODEL_H

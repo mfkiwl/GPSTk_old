@@ -70,9 +70,7 @@ namespace POD
       ForceList();
 
          /// Default destructor
-      virtual ~ForceList()
-      {};
-
+      virtual ~ForceList() {};
 
          /**
          * Adds a generic force to the list

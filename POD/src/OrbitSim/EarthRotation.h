@@ -13,7 +13,7 @@ namespace POD
     class EarthRotation
 	{
     public:
-        static  EarthRotation erp;
+        static  EarthRotation eopStore;
 
         EarthRotation();
         EarthRotation(const EOPDataStore & eop);
