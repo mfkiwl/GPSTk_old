@@ -14,20 +14,10 @@ namespace POD
     }
 
     /* Evaluates the two harmonic functions V and W.
-    * @param r ECI position vector.
-    * @param E ECI to ECEF transformation matrix.
+    * @param r ECEF position vector.
     */
-    void SphericalHarmonicsModel::computeVW(Vector<double> r, Matrix<double> E)
+    void SphericalHarmonicsModel::computeVW(Vector<double> r_bf)
     {
-        if ((r.size() != 3) || (E.rows() != 3) || (E.cols() != 3))
-        {
-            Exception e("Wrong input for computeVW");
-            GPSTK_THROW(e);
-        }
-
-        // Rotate from ECI to ECEF
-        Vector<double> r_bf = E * r;
-
         const double R_ref = gmData_.refDistance;
 
         // Auxiliary quantities
@@ -38,7 +28,6 @@ namespace POD
         double x0 = R_ref * r_bf(0) / r_sqr;
         double y0 = R_ref * r_bf(1) / r_sqr;
         double z0 = R_ref * r_bf(2) / r_sqr;
-
 
         //
         // Evaluate harmonic functions 
@@ -85,17 +74,57 @@ namespace POD
 
     }  // End of method 'GravityModel::computeVW()'
 
+    void SphericalHarmonicsModel::computeNormVW(Vector<double> r_bf)
+    {
+        const double R_ref = gmData_.refDistance;
 
+        // Auxiliary quantities
+        double r_sqr = dot(r_bf, r_bf);
+        double rho = R_ref * R_ref / r_sqr;
+
+        // Normalized coordinates
+        double x0 = R_ref * r_bf(0) / r_sqr;
+        double y0 = R_ref * r_bf(1) / r_sqr;
+        double z0 = R_ref * r_bf(2) / r_sqr;
+
+        V[1][0] = normN01(1,0)*z0 * V[0][0];
+        W[1][0] = 0.0;
+
+        for (int n = 2; n <= (gmData_.desiredDegree + 2); n++)
+        {
+            V[n][0] = (normN01(n,0) * z0 * V[n - 1][0] - normN02(n, 0) * rho * V[n - 2][0]) ;
+            W[n][0] = 0.0;
+        }
+        // Calculate tesseral and sectorial terms
+        for (int m = 1; m <= (gmData_.desiredOrder + 2); m++)
+        {
+            // Calculate V(m,m) .. V(n_max+1,m)
+
+            V[m][m] = normFactorNN(m) * (x0 * V[m - 1][m - 1] - y0 * W[m - 1][m - 1]);
+            W[m][m] = normFactorNN(m) * (x0 * W[m - 1][m - 1] + y0 * V[m - 1][m - 1]);
+    
+            if (m <= (gmData_.desiredDegree + 1))
+            {
+                V[m + 1][m] = normN01(m + 1, m)*z0 *V[m][m];
+                W[m + 1][m] = normN01(m + 1, m)*z0 *W[m][m];
+            }
+            for (int n = (m + 2); n <= (gmData_.desiredDegree + 2); n++)
+            {
+                V[n][m] = (normN01(n, m) * z0 * V[n - 1][m] - normN02(n, m) * rho * V[n - 2][m]);
+                W[n][m] = (normN01(n, m) * z0 * W[n - 1][m] - normN02(n, m) * rho * W[n - 2][m]);
+            }
+        }  // End 'for (int m = 1; m <= (desiredOrder + 2); m++) '
+
+    }
        /* Computes the acceleration due to gravity in m/s^2.
-       * @param r ECI position vector.
        * @param E ECI to ECEF transformation matrix.
        * @return ECI acceleration in m/s^2.
        */
-    Vector<double> SphericalHarmonicsModel::gravity(Vector<double> r, Matrix<double> E)
+    Vector<double> SphericalHarmonicsModel::gravity(const Matrix<double>& E)
     {
         // dimension should be checked here
         // I'll do it latter...
-        if ((r.size() != 3) || (E.rows() != 3) || (E.cols() != 3))
+        if ((E.rows() != 3) || (E.cols() != 3))
         {
             Exception e("Wrong input for computeVW");
             GPSTK_THROW(e);
@@ -150,25 +179,81 @@ namespace POD
 
     }  // End of method 'GravityModel::gravity'
 
-
-       /* Computes the partial derivative of gravity with respect to position.
-       * @return ECI gravity gradient matrix.
-       * @param r ECI position vector.
-       * @param E ECI to ECEF transformation matrix.
-       */
-    Matrix<double> SphericalHarmonicsModel::gravityGradient(gpstk::Vector<double> r, gpstk::Matrix<double> E)
+    Vector<double> SphericalHarmonicsModel::gravityNorm(const Matrix<double>& E)
     {
         // dimension should be checked here
         // I'll do it latter...
-        if ((r.size() != 3) || (E.rows() != 3) || (E.cols() != 3))
+        if ((E.rows() != 3) || (E.cols() != 3))
         {
-            Exception e("Wrong input for gravityGradient");
+            Exception e("Wrong input for computeVW");
             GPSTK_THROW(e);
         }
 
         Matrix<double> cs = gmData_.unnormalizedCS;
 
 
+        // Calculate accelerations ax,ay,az
+        double ax(0.0), ay(0.0), az(0.0);
+
+        for (int m = 0; m <= gmData_.desiredOrder; m++)
+        {
+            for (int n = m; n <= gmData_.desiredDegree; n++)
+            {
+                if (m == 0)
+                {
+                    double C = cs[n][0];               // = C_n,0
+                    double norm = sqrt((2.0*n + 1)*(n + 2)*(n + 1) / (2.0*(2.0*n + 3)));
+                    ax -= C * V[n + 1][1] * norm;
+                    ay -= C * W[n + 1][1] * norm;
+                    az -= C * V[n + 1][0] * norm*sqrt(2);
+                }
+                else
+                {
+                    double C = cs[n][m];   // = C_n,m
+                    double S = cs[m - 1][n]; // = S_n,m
+                    double Fac = 0.5 * (n - m + 1) * (n - m + 2);
+
+                    ax += 0.5*(-C*V[n + 1][m + 1] - S*W[n + 1][m + 1]) + Fac*(C*V[n + 1][m - 1] + S*W[n + 1][m - 1]);
+                    ay += 0.5*(-C*W[n + 1][m + 1] + S*V[n + 1][m + 1]) + Fac*(-C*W[n + 1][m - 1] + S*V[n + 1][m - 1]);
+                    az += (n - m + 1)*(-C*V[n + 1][m] - S*W[n + 1][m]);
+                }
+
+            }  // End of 'for (int n = m; n <= (desiredDegree+1) ; n++)'
+
+        }  // End of 'for (int m = 0; m <= (desiredOrder+1); m++)'
+
+           // Body-fixed acceleration
+        Vector<double> a_bf(3, 0.0);
+        a_bf(0) = ax;
+        a_bf(1) = ay;
+        a_bf(2) = az;
+
+        a_bf = a_bf * (gmData_.GM / (gmData_.refDistance * gmData_.refDistance));
+
+        // Inertial acceleration
+        Matrix<double> Etrans = transpose(E);
+        Vector<double> out = Etrans * a_bf;            // this line may be wrong  matrix * vector
+
+        return out;
+
+    }  // End of method 'GravityModel::gravity'
+       /* Computes the partial derivative of gravity with respect to position.
+       * @return ECI gravity gradient matrix.
+       * @param r ECI position vector.
+       * @param E ECI to ECEF transformation matrix.
+       */
+    Matrix<double> SphericalHarmonicsModel::gravityGradient(const Matrix<double>& E)
+    {
+        // dimension should be checked here
+        // I'll do it latter...
+        if ((E.rows() != 3) || (E.cols() != 3))
+        {
+            Exception e("Wrong input for gravityGradient");
+            GPSTK_THROW(e);
+        }
+
+        Matrix<double> cs = gmData_.unnormalizedCS;
+        
         double xx = 0.0;
         double xy = 0.0;
         double xz = 0.0;
@@ -230,7 +315,7 @@ namespace POD
                 }
             }
             //consequence Laplace equation:
-            //d2U/dx2+d2U/dy2 + d2U/dz2 = 0
+            //d2U/dx2 + d2U/dy2 + d2U/dz2 = 0
             yy = -xx - zz;
 
             out(0, 0) = xx;
@@ -291,14 +376,19 @@ namespace POD
         // corrcet earth tides
         // correctCSTides(time, correctSolidTide, correctOceanTide, correctPoleTide);
 
-        // Evaluate harmonic functions
-        computeVW(sc.R(), C2T);         // update VM
+        // inertial position
+        Vector<double> r_in = sc.R();
+        //terestrial position
+        Vector<double> r_bf = C2T*r_in;
 
-                                        // a
-        a = gravity(sc.R(), C2T);
+        // Evaluate harmonic functions
+        computeVW(r_bf);         // update VM
+
+        // a
+        a = gravity(C2T);
 
         // da_dr
-        da_dr = gravityGradient(sc.R(), C2T);
+        da_dr = gravityGradient(C2T);
 
         //da_dv
         da_dv.resize(3, 3, 0.0);
@@ -413,7 +503,6 @@ namespace POD
 
     }  // End of method 'GravityModel::correctCSTides()'
 
-
     double SphericalHarmonicsModel::normFactor(int n, int m)
     {
         // The input should be n >= m >= 0
@@ -424,9 +513,9 @@ namespace POD
             fac = fac * double(i);
         }
 
-        double delta = (m == 0) ? 1.0 : 0.0;
+      //  double delta = (m == 0) ? 1.0 : 0.0;
 
-        double num = (2.0 * n + 1.0) * (2.0 - delta);
+        double num = (2.0 * n + 1.0) * (2.0 - delta(m));
 
         // We should make sure fac!=0, but it won't happen on the case,
         // so we just skip handling it
@@ -435,8 +524,34 @@ namespace POD
         return out;
 
     }  // End of method 'GravityModel::normFactor())
+ 
+
+    double SphericalHarmonicsModel:: normN01(int n, int m)
+    {
+        double res = (4.0*n*n - 1) / (n*n - m*m);
+        return std::sqrt(res);
+    }
 
     //
+    double SphericalHarmonicsModel::normN02(int n, int m)
+    {
+        int nsq = (n - 1)*(n - 1);
+
+        double nom = (2.0*n+1)*(nsq-m*m);
+        double denom = (2.0*n - 3)*(n*n - m*m);
+
+        return std::sqrt(nom/denom);
+    }
+
+    //
+    double  SphericalHarmonicsModel::normFactorNN(int n)
+    {
+        double nom = (2.0*n + 1)*(2 - delta(n));
+        double denom = 2.0*n *(2 - delta(n - 1));
+
+        return std::sqrt(nom / denom);
+    }
+     //
     //void SphericalHarmonicsModel::test()
     //{
     //    Vector<double> r(3, 0.0);
@@ -459,4 +574,6 @@ namespace POD
     //    std::cout << da_dr << std::endl;
 
     //}  // End of method 'GravityModel::test()'
+
+
 }

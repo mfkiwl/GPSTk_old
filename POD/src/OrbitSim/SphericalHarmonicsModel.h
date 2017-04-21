@@ -21,19 +21,18 @@ namespace POD
 
 
         /** Computes the acceleration due to gravity in m/s^2.
-        * @param r ECI position vector.
         * @param E ECI to ECEF transformation matrix.
         * @return ECI acceleration in m/s^2.
         */
-        Vector<double> gravity(Vector<double> r, Matrix<double> E);
+        Vector<double> gravity(const Matrix<double>& E);
 
-
+        Vector<double> gravityNorm(const Matrix<double>& E);
         /** Computes the partial derivative of gravity with respect to position.
         * @return ECI gravity gradient matrix.
         * @param r ECI position vector.
         * @param E ECI to ECEF transformation matrix.
         */
-        Matrix<double> gravityGradient(Vector<double> r, Matrix<double> E);
+        Matrix<double> gravityGradient(const Matrix<double>& E);
 
 
         /** Call the relevant methods to compute the acceleration.
@@ -58,17 +57,21 @@ namespace POD
 
     protected:
 
-        /** Evaluates the two harmonic functions V and W.
-        * @param r ECI position vector.
-        * @param E ECI to ECEF transformation matrix.
+        /* Evaluates the two harmonic functions V and W.
+        * @param r ECEF position vector.
         */
-        void computeVW(Vector<double> r, Matrix<double> E);
+        void computeVW(Vector<double> r_bf);
+
+        void computeNormVW(Vector<double> r_bf);
 
         /// Add tides to coefficients 
         void correctCSTides(Epoch t, bool solidFlag = false, bool oceanFlag = false, bool poleFlag = false);
 
         /// normalized coefficient
         double normFactor(int n, int m);
+        double normN01(int n, int m);
+        double normN02(int n, int m);
+        double normFactorNN(int n);
 
         /// V W  (nmax+3)*(nmax+3)
         /// Harmonic function V and W
@@ -78,6 +81,16 @@ namespace POD
         EarthSolidTide  solidTide;
         EarthPoleTide   poleTide;
         EarthOceanTide  oceanTide;
+    private :
+
+        double delta(int n) 
+        {
+            return (n == 0) ? 1.0 : 0.0;
+        }
+        double E(int n)
+        {
+            return 2.0-delta(n);
+        }
     };
 }
 

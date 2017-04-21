@@ -14,7 +14,6 @@ namespace POD
 {
     typedef unique_ptr<Integrator> IntegratorUniquePtr;
     typedef unique_ptr<OrbitModel> OrbitModelUniquePtr;
-
     class OrbitSim
     {
 
@@ -25,10 +24,6 @@ namespace POD
 
         /// Default destructor
         virtual ~OrbitSim();
-
-        /* set force model setting
-        */
-        //void setForceModel(ForceModelSetting& fms);
 
 
         /// set integrator, default is Rungge-Kutta 78
@@ -44,19 +39,22 @@ namespace POD
             pIntegrator.reset(new RungeKuttaFehlberg);
             return (*this);
         }
-
-        /// set equation of motion of the orbit
-        OrbitSim& setOrbit(OrbitModel* porbit)
-        {
-            pOrbit.reset(porbit); 
-            return (*this);
-        }
-
-        /// set the orbit to the default one
         OrbitSim& setDefaultOrbit()
         {
             pOrbit.reset(new OrbitModel);
             return (*this);
+        }
+        /// set equation of motion of the orbit
+        OrbitSim& setOrbit(OrbitModel *  orbit)
+        {
+            pOrbit.reset(orbit);
+            return (*this);
+        }
+
+        /// set the orbit to the default one
+        OrbitModel& getOrbit()
+        {
+            return (*pOrbit);
         }
 
         /// set step size of the integrator
@@ -119,24 +117,8 @@ namespace POD
         /// write curT curState to a file
         void writeToFile(std::ostream& s) const;
 
-        /*
-        * try to integrate ephemeris and print it to a file
-        * just for compare it with stk8.1
-        *
-        * yanwei,Sep 19 th,2009
-        */
-        //void makeSatEph(OrbitSetting& os,string fileName);
-        //void makeRefSatEph(OrbitSetting& os,string fileName);
 
-        /* For Testing and Debuging...
-        */
-
-
-        //void IntegrateTo(const CommonTime & te);
-        //
-        //void IntegrateTo(const double & dt);
-
-
+        ///tests methods
         void test();
         static void runTest();
 
@@ -183,6 +165,8 @@ namespace POD
     private:
 
         static void testKepler();
+        static void testFwBw();
+
         /// current time since reference epoch
         double curT;
 

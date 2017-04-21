@@ -12,7 +12,6 @@ namespace POD
         curT(0.0)
     {
         setDefaultIntegrator();
-        setDefaultOrbit();
         setStepSize(3.0);
 
     }  // End of constructor 'OrbitSim::OrbitSim()'
@@ -22,7 +21,7 @@ namespace POD
     OrbitSim::~OrbitSim()
     {
         pIntegrator.release();
-        pOrbit.release();
+
     }
 
     /* Take a single integration step.
@@ -37,8 +36,8 @@ namespace POD
         try
         {
             curT = tf;
-            EquationOfMotion *eq = pOrbit.get();
-            curState = pIntegrator->integrateTo(t, y, eq, tf);
+
+            curState = pIntegrator->integrateTo(t, y, pOrbit.get(), tf);
 
             updateMatrix();
 
@@ -61,8 +60,8 @@ namespace POD
             Vector<double> y = curState;
 
             curT = tf;
-            EquationOfMotion *eq = pOrbit.get();
-            curState = pIntegrator->integrateTo(t, y, eq, tf);
+          
+            curState = pIntegrator->integrateTo(t, y, pOrbit.get(), tf);
 
             updateMatrix();
 
@@ -407,7 +406,7 @@ namespace POD
         fmd.gData.loadModel("GEN\\EGM2008_TideFree_nm150.txt");
         OrbitModel om(fmd);
 
-        op.setOrbit(&om);
+      //  op.setOrbit(om);
 
         Vector<double> elts(6, 0.0);
         double T(5200.0), step(5.0), tt(86400.0 * 7);
@@ -430,7 +429,7 @@ namespace POD
 
         //
         double t = 0;
-        
+
         //
         while (t < tt)
         {
@@ -446,5 +445,9 @@ namespace POD
             }
         }
         os.close();
+    }
+    void OrbitSim::testFwBw()
+    {
+
     }
 }
