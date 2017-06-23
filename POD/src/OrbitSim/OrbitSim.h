@@ -108,6 +108,12 @@ namespace POD
             return curState;
         }
 
+        OrbitSim& updateRefEpoch()
+        {
+            this->pOrbit->setRefEpoch(getCurTime());
+            curT = 0;
+            return (*this);
+        }
         /// get numble of force model parameters
         int getNP() const
         {
@@ -161,6 +167,12 @@ namespace POD
 
         /// Pointer to the Equation Of Motion of a satellite
         OrbitModelUniquePtr  pOrbit;
+       
+        /// Default integrator
+        RungeKuttaFehlberg defIntehrator;
+        
+        ///Default force model
+        OrbitModel  defOrbit;
 
     private:
 

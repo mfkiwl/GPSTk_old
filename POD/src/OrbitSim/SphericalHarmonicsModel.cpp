@@ -513,7 +513,7 @@ namespace POD
             fac = fac * double(i);
         }
 
-      //  double delta = (m == 0) ? 1.0 : 0.0;
+        //  double delta = (m == 0) ? 1.0 : 0.0;
 
         double num = (2.0 * n + 1.0) * (2.0 - delta(m));
 
@@ -574,6 +574,5 @@ namespace POD
     //    std::cout << da_dr << std::endl;
 
     //}  // End of method 'GravityModel::test()'
-
-
 }
+

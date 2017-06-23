@@ -7,11 +7,13 @@ namespace POD
 {
 
     // Constructor
-    OrbitSim::OrbitSim()
-        : pIntegrator(),
+    OrbitSim::OrbitSim():
+        //: pIntegrator(&defIntehrator),
+        //pOrbit(&defOrbit),
         curT(0.0)
     {
         setDefaultIntegrator();
+        setDefaultOrbit();
         setStepSize(3.0);
 
     }  // End of constructor 'OrbitSim::OrbitSim()'
@@ -20,7 +22,8 @@ namespace POD
        // Default destructor
     OrbitSim::~OrbitSim()
     {
-        pIntegrator.release();
+        pIntegrator.reset();
+        pOrbit.reset();
 
     }
 
@@ -390,9 +393,9 @@ namespace POD
 
     void OrbitSim:: runTest()
     {
-        cout << EarthRotation::eopStore.loadEOP("finals2000A.data") << endl;
-        cout << "ERP loading..."<<endl;
-        testKepler();
+      /*  cout << EarthRotation::eopStore.loadEOP("finals2000A.data") << endl;
+        cout << "ERP loading..."<<endl;*/
+        testFwBw();
 
     }
     void OrbitSim::testKepler()
@@ -404,16 +407,16 @@ namespace POD
         OrbitSim op;
         ForceModelData fmd;
         fmd.gData.loadModel("GEN\\EGM2008_TideFree_nm150.txt");
-        OrbitModel om(fmd);
 
-      //  op.setOrbit(om);
+        op.setOrbit(new OrbitModel(fmd));
+        op.setStepSize(60);
 
         Vector<double> elts(6, 0.0);
-        double T(5200.0), step(5.0), tt(86400.0 * 7);
+        double step(5200.0), tt(86400.0 * 10);
 
         elts(0) = 6487264.0502067700; //A, m
         elts(1) = 0.001;              //ecc
-        elts(2) = 1.0;                //i, rad
+        elts(2) = M_PI_2;                //i, rad
         elts(3) = 2.0;                //OMG, rad
         elts(4) = 3.0;                //omg, rad
         elts(5) = 0.0;                //M, rad
@@ -423,12 +426,13 @@ namespace POD
         Vector<double> sv = KeplerOrbit::State(mu, elts, 0);
 
         op.setInitState(t0, sv);
-
-        os << fixed << setw(12) << setprecision(5);
+      
+        auto sv0 = op.getCurState();
+        os << fixed << setw(12) << setprecision(6);
         os << op.getCurTime() << " " << op.getCurState() << endl;
 
         //
-        double t = 0;
+        double t = 0, dMax = 0;
 
         //
         while (t < tt)
@@ -438,16 +442,82 @@ namespace POD
                 cout << "failed to integrate\n";
                 break;
             }
+
             t += step;
-            if (fmod(t, T) == 0)
-            {
-                os << op.getCurTime() << " " << op.getCurState() << endl;
-            }
+
+            auto svi = op.getCurState();
+            auto dsv = svi - sv0;
+            
+            double d = 0;
+            for (size_t i = 0; i < 3; i++)
+                d += dsv[i] * dsv[i];
+            d = sqrt(d) * 1000;
+            dMax = (d > dMax) ? d : dMax;
+            os << op.getCurTime() << " " << d << endl;
         }
+        os << "max Err"<< " " << dMax << endl;
         os.close();
     }
     void OrbitSim::testFwBw()
     {
+        cout << "Test Fwd-Bwd" << endl;
 
+        ofstream os("Integr_test.out");
+
+        OrbitSim op;
+        ForceModelData fmd;
+        fmd.gData.loadModel("GEN\\EGM2008_TideFree_nm150.txt");
+        op.setOrbit(new OrbitModel(fmd));
+        op.setStepSize(5);
+
+        Vector<double> elts(6, 0.0);
+        double step(5200.0), tt(10*86400);
+
+        elts(0) = 10000000; //6487264.0502067700; //A, m
+        elts(1) = 0.000;              //ecc
+        elts(2) = 0;                  //i, rad
+        elts(3) = 0.0;                //OMG, rad
+        elts(4) = 0.0;                //omg, rad
+        elts(5) = 0.0;                //M, rad
+
+        CommonTime t0 = (CommonTime)(CivilTime(2013, 01, 30, 0, 0, 0.0, TimeSystem::TT));
+        double mu = 3.98600441500e+14;
+        Vector<double> sv = KeplerOrbit::State(mu, elts, 0);
+
+        op.setInitState(t0, sv);
+
+        auto sv0 = op.getCurState();
+        os << fixed << setw(12) << setprecision(6);
+        os << op.getCurTime() << " " << op.getCurState() << endl;
+
+        //
+        double t = 0, dMax = 0;
+
+        if (!op.integrateTo( tt))
+        {
+            cout << "failed to  fwd integrate\n";
+        }
+        os << op.getCurTime() << " " << op.getCurState() << endl;
+        op.updateRefEpoch();
+        os << op.getCurTime() << " " << op.getCurState() << endl;
+        if (!op.integrateTo(-tt))
+        {
+            cout << "failed to bwd integrate\n";
+        }
+
+        os << op.getCurTime() << " " << op.getCurState() << endl;
+        auto svi = op.getCurState();
+        auto dsv = svi - sv0;
+
+        double d = 0;
+        for (size_t i = 0; i < 3; i++)
+            d += dsv[i] * dsv[i];
+        d = sqrt(d) * 1000;
+        dMax = (d > dMax) ? d : dMax;
+       
+        os << op.getCurTime() << " " << d << endl;
+
+        //  os << "max Err" << " " << dMax << endl;
+        os.close();
     }
 }

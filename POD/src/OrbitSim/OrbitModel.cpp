@@ -28,20 +28,19 @@ namespace POD
     
     OrbitModel& OrbitModel::reset(const ForceModelData& fmc)
     {
-
         this->forceList.clear();
 
-        if (!fmc.gData.isModelLoaded)
+        if (!fmc.gData.isValid)
         {
-            InvalidParameter e("Gravity model doesn't loaded");
+            InvalidParameter e("Invalid Gravity Model");
             GPSTK_THROW(e);
         }
 
         // GeoEarth
         if (fmc.gData.desiredDegree<2)
-            this->forceList.addForce(ForceUniquePtr(new  CentralMassModel(fmc.gData)));
+            this->forceList.addForce(std::make_unique<Force>(CentralMassModel(fmc.gData)));
         else
-            this->forceList.addForce(ForceUniquePtr(new  SphericalHarmonicsModel(fmc.gData)));
+            this->forceList.addForce(std::make_unique<Force>(SphericalHarmonicsModel(fmc.gData)));
 
         ////sun gravity
         //if (fmc.useGravSun)
