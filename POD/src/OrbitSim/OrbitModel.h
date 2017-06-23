@@ -43,7 +43,6 @@ namespace POD
             return t0;
         }
 
-
     protected:
 
         /// Reference epoch

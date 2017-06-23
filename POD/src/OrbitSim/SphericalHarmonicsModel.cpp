@@ -574,6 +574,5 @@ namespace POD
     //    std::cout << da_dr << std::endl;
 
     //}  // End of method 'GravityModel::test()'
-
-
 }
+
