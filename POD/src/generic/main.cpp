@@ -9,10 +9,13 @@ int main(int argc, char *argv[])
 
 
     OrbitSim::runTest();
-    /*CivilTime ct(2012, 10, 10, 2, 3, 1, TimeSystem::GPS);
+   
+    /*
+    CivilTime ct(2012, 10, 10, 2, 3, 1, TimeSystem::GPS);
     CommonTime epoch = (CommonTime)ct;
     Matrix<double> C2E = ERP.getJ2k2ECEF(epoch);
-    cout << C2E << endl;*/
+    cout << C2E << endl;
+    */
 
     return 0;
 }

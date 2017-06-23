@@ -16,16 +16,13 @@ namespace POD
         gData = GravityModelData();
     }
 
-    
-
     ForceModelData::~ForceModelData()
     {
-
     }
 
     void GravityModelData:: loadModel(const std::string &path)
     {
-
+        isValid = false;
         ifstream inpStream(path);
         if (!inpStream.is_open())
         {
@@ -78,7 +75,7 @@ namespace POD
             if (n == desiredDegree && m == desiredOrder) break;
 
         }
-        isModelLoaded = true;
+        isValid = true;
     }
 
 }

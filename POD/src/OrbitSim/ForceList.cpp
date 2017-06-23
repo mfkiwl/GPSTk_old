@@ -109,7 +109,6 @@ namespace POD
             dy(42+3*np+i*np+k) = dphi(i+3,i*np+k);  // da_dp0
          }
       }
-
       return dy;
 
    }  // End of method 'ForceList::getDerivatives()'

@@ -10,7 +10,7 @@ namespace POD
 	{
 		std::string modelName;
 
-		double GM;
+		double GM = 3.98600441500e+14;
 		double refDistance;
 
 		bool includesPermTide;
@@ -24,8 +24,8 @@ namespace POD
 		int desiredDegree = 0;
 		int desiredOrder = 0;
 
-		int maxDegree;
-		int maxOrder;
+        int maxDegree = 0;
+		int maxOrder = 0;
 
 		bool solidTide = false;
 		bool oceanTide = false;
@@ -36,7 +36,7 @@ namespace POD
 
         gpstk:: Matrix<double> normalizedCS;
 
-		bool isModelLoaded = false;
+		bool isValid = true;
 
 		void loadModel(const std::string &path);
 
