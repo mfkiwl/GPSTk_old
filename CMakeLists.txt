@@ -163,7 +163,6 @@ endif()
 if( BUILD_MY )
   add_subdirectory( SOFA )
   add_subdirectory( POD )
- # add_subdirectory( cli )
 endif()
 #----------------------------------------
 # Export the project import cmake files.
