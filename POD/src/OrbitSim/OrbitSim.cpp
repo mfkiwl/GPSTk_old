@@ -475,7 +475,11 @@ namespace POD
 
         elts(0) = 10000000; //6487264.0502067700; //A, m
         elts(1) = 0.000;              //ecc
+<<<<<<< HEAD
         elts(2) = 0;                  //i, rad
+=======
+        elts(2) = 0;                //i, rad
+>>>>>>> origin/master
         elts(3) = 0.0;                //OMG, rad
         elts(4) = 0.0;                //omg, rad
         elts(5) = 0.0;                //M, rad
